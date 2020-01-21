@@ -19,4 +19,4 @@ libraryDependencies ++= Seq(
 
 licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 
-testOptions in Test += Tests.Argument("-oD")
+parallelExecution in Test := false

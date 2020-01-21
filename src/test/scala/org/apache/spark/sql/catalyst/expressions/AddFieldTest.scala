@@ -54,13 +54,15 @@ class AddFieldTest extends ExpressionTester {
     checkEvaluation(AddField(nullStruct, "b", Literal(2)), null)
   }
 
-  test("should add new field to end of struct") {
+  test("should add new non-null field to end of struct") {
     nonNullInputs.foreach { inputField =>
       checkEvaluation(
         AddField(nonNullStruct, "d", inputField),
         create_row(1, Seq("hello"), true, inputField.value))
     }
+  }
 
+  test("should add new null field to end of struct") {
     nullInputs.foreach { inputField =>
       checkEvaluation(
         AddField(nonNullStruct, "d", inputField),
@@ -68,13 +70,15 @@ class AddFieldTest extends ExpressionTester {
     }
   }
 
-  test("should replace field in-place in struct") {
+  test("should replace field in-place with non-null value in struct") {
     nonNullInputs.foreach { inputField =>
       checkEvaluation(
         AddField(nonNullStruct, "b", inputField),
         create_row(1, inputField.value, true))
     }
+  }
 
+  test("should replace field in-place with null value in struct") {
     nullInputs.foreach { inputField =>
       checkEvaluation(
         AddField(nonNullStruct, "b", inputField),
