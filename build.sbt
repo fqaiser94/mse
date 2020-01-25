@@ -25,3 +25,6 @@ ThisBuild / githubOwner := "fqaiser94"
 ThisBuild / githubRepository := "mse"
 ThisBuild / githubUser := sys.env.getOrElse("GITHUB_USER", "")
 ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
+
+publishConfiguration := publishConfiguration.value.withOverwrite(true)
+publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true)
