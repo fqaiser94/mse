@@ -186,7 +186,7 @@ structLevel2.withColumn("a", $"a".withField(
 // +--------+
 ``` 
 
-# Questions/Thougts/Concerns?
+# Questions/Thoughts/Concerns?
 
 Feel free to submit an issue. 
 
