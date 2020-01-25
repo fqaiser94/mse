@@ -9,12 +9,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: test
-        uses: lokkju/github-action-sbt@v0.2.2
-        with:
-          commands: test
+#      - name: test
+#        uses: lokkju/github-action-sbt@v0.2.2
+#        with:
+#          commands: test
       - name: deploy
         uses: lokkju/github-action-sbt@v0.2.2
         with:
           commands: publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
