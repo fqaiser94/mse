@@ -1,7 +1,5 @@
 name: CI/CD
-
 on: [push]
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,10 +11,10 @@ jobs:
           commands: + test
   deploy:
     if: contains(github.ref, 'master')
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - needs: test
       - name: sbt deploy
         uses: lokkju/github-action-sbt@v0.2.2
         with:
