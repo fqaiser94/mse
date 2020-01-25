@@ -7,13 +7,48 @@ The methods themselves have been implemented using Catalyst Expressions and so s
 # Supported Spark versions
 MSE should work without any further requirements on Spark 2.4.x
 
-# Usage 
+# Installation
 
-Start a spark-shell session. Make sure to include the correct jar version.  
+## SBT Project
+
+To include this library in an SBT project, you can use [sbt-github-packages plugin](https://github.com/djspiewak/sbt-github-packages). 
+See the link for up-to-date instructions but basically, you need to:  
+
+1. Include the plugin in `project/plugins.sbt`: 
+```scala
+addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.2.1")
+```
+
+2. Include this library as a dependency in `build.sbt`: 
+```scala
+libraryDependencies ++= Seq(
+  "mse" %% "mse" % "0.1.1"
+)
+
+resolvers += Resolver.githubPackagesRepo("fqaiser94", "mse")
+
+credentials += Credentials(
+  "GitHub Package Registry",
+  "maven.pkg.github.com",
+  // THIS IS NOT SECURE, BE CAREFUL!
+  "GITHUB_USERNAME", 
+  "GITHUB_ACCESS_TOKEN")
+```
+
+## Other Projects (e.g. Maven, Gradle)
+
+See [GitHub docs](https://help.github.com/en/github/managing-packages-with-github-packages/using-github-packages-with-your-projects-ecosystem) for details. 
+
+## spark-shell or spark-submit
+
+Download the latest jar from [GitHub packages](https://github.com/fqaiser94/mse/packages). Make sure you choose the correct Scala version for your needs.
+Start a spark-shell session and include the path to downloaded jar:    
 
 ```bash
 spark-shell --jars mse_2.11-0.1.jar
 ``` 
+
+# Usage 
 
 To bring in to scope the (implicit) Column methods, use:   
 
@@ -21,7 +56,7 @@ To bring in to scope the (implicit) Column methods, use:
 import com.mse.column.methods._
 ```
 
-You can now use these method to manipulate fields in a top-level StructType column: 
+You can now use these methods to manipulate fields in a top-level StructType column: 
 
 ```scala
 import org.apache.spark.sql._
@@ -84,7 +119,7 @@ structLevel1.withColumn("a", $"a".dropFields("b")).show
 
 ```
 
-You can also use these method to manipulate fields in deeply nested StructType columns: 
+You can also use these methods to manipulate fields in deeply nested StructType columns: 
 
 ```scala
 // Generate some example data  
@@ -151,6 +186,9 @@ structLevel2.withColumn("a", $"a".withField(
 // +--------+
 ``` 
 
+# Questions/Thoughts/Concerns?
+
+Feel free to submit an issue. 
 
 # Upcoming features
 
