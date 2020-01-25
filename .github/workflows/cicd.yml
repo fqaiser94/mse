@@ -1,8 +1,4 @@
-name: CD
-on:
-  push:
-    branches:
-      - master
+name: CI/CD
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,6 +9,7 @@ jobs:
         with:
           commands: + test
   deploy:
+    if: contains(github.ref, 'master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
