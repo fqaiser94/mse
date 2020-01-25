@@ -20,3 +20,8 @@ libraryDependencies ++= Seq(
 licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 
 parallelExecution in Test := false
+
+ThisBuild / githubOwner := "fqaiser94"
+ThisBuild / githubRepository := "mse"
+ThisBuild / githubUser := sys.env.getOrElse("GITHUB_USER", "")
+ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
