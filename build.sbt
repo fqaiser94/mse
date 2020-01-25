@@ -1,6 +1,6 @@
 name := "mse"
 
-version := "0.1"
+version := "0.1.1"
 
 scalaVersion := "2.12.10"
 
@@ -20,3 +20,8 @@ libraryDependencies ++= Seq(
 licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 
 parallelExecution in Test := false
+
+ThisBuild / githubOwner := "fqaiser94"
+ThisBuild / githubRepository := "mse"
+ThisBuild / githubUser := sys.env.getOrElse("GITHUB_USER", "")
+ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))

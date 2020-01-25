@@ -9,6 +9,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: SBT Action
+      - name: test
         uses: lokkju/github-action-sbt@v0.2.2
-
+        with:
+          commands: + test
