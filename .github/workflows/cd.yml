@@ -1,22 +1,23 @@
 name: CD
-
 on:
   push:
     branches:
       - master
-
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v1
-      - name: test
+      - name: sbt test
         uses: lokkju/github-action-sbt@v0.2.2
         with:
           commands: + test
-      - name: deploy
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - needs: test
+      - name: sbt deploy
         uses: lokkju/github-action-sbt@v0.2.2
         with:
           commands: + publish
