@@ -5,7 +5,7 @@ The signature and behaviour of these methods is meant to be similar to their Dat
 The methods themselves have been implemented using Catalyst Expressions and so should provide good performance (and certainly better than UDFs). 
 
 # Supported Spark versions
-MSE should work without any further requirements on Spark 2.4.x
+MSE should work without any further requirements on Spark 2.4.x. 
 
 # Installation
 
@@ -186,6 +186,78 @@ structLevel2.withColumn("a", $"a".withField(
 // +--------+
 ``` 
 
+Another common use-case is to perform these operations on array of structs. 
+To do this using the Scala APIs, we recommend combining the functions in this library with the functions provided in [spark-hofs](https://github.com/AbsaOSS/spark-hofs/):
+
+```bash
+spark-shell --jars mse_2.11-0.1.jar --packages "za.co.absa:spark-hofs_2.11:0.4.0"
+```   
+
+```scala
+import org.apache.spark.sql._
+import org.apache.spark.sql.types._
+import com.mse.column.methods._
+import za.co.absa.spark.hofs._
+
+// Generate some example data
+val arrayOfStructs = spark.createDataFrame(sc.parallelize(
+    Row(List(Row(1, null, 3), Row(4, null, 6))) :: Nil),
+    StructType(Seq(
+      StructField("array", ArrayType(
+        StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("b", IntegerType), 
+          StructField("c", IntegerType)))))))).cache
+          
+arrayOfStructs.show
+// +------------------+
+// |             array|
+// +------------------+
+// |[[1,, 3], [4,, 6]]|
+// +------------------+
+
+arrayOfStructs.printSchema
+// root
+//  |-- array: array (nullable = true)
+//  |    |-- element: struct (containsNull = true)
+//  |    |    |-- a: integer (nullable = true)
+//  |    |    |-- b: integer (nullable = true)
+//  |    |    |-- c: integer (nullable = true)
+
+// add new field to each struct element of array 
+arrayOfStructs.withColumn("array", transform($"array", elem => elem.withField("d", lit("hello")))).show(false)
+// +--------------------------------+
+// |array                           |
+// +--------------------------------+
+// |[[1,, 3, hello], [4,, 6, hello]]|
+// +--------------------------------+
+
+// replace field in each struct element of array
+arrayOfStructs.withColumn("array", transform($"array", elem => elem.withField("b", elem.getField("a") + 1))).show(false)
+// +----------------------+
+// |array                 |
+// +----------------------+
+// |[[1, 2, 3], [4, 5, 6]]|
+// +----------------------+
+
+// rename field in each struct element of array
+arrayOfStructs.withColumn("array", transform($"array", elem => elem.withFieldRenamed("b", "z"))).printSchema
+// root
+//  |-- array: array (nullable = true)
+//  |    |-- element: struct (containsNull = true)
+//  |    |    |-- a: integer (nullable = true)
+//  |    |    |-- z: integer (nullable = true)
+//  |    |    |-- c: integer (nullable = true)
+
+// drop field in each Struct element of array
+arrayOfStructs.withColumn("array", transform($"array", elem => elem.dropFields("b"))).show(false)
+// +----------------+
+// |array           |
+// +----------------+
+// |[[1, 3], [4, 6]]|
+// +----------------+
+```
+
 # Questions/Thoughts/Concerns?
 
 Feel free to submit an issue. 
@@ -194,7 +266,6 @@ Feel free to submit an issue.
 
 1. Publish to Maven Central.  
 2. Add a utility function so that users can manipulate deeply nested fields directly without having to write nested function calls.
-3. Add feature to manipulate array/map of struct.   
-4. Add spark planning optimization rule to collapse multiple withField/withFieldRenamed/dropFields calls into a single operation.
-5. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
-6. Add python bindings. 
+3. Add spark planning optimization rule to collapse multiple withField/withFieldRenamed/dropFields calls into a single operation.
+4. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
+5. Add python bindings. 
