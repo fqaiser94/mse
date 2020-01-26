@@ -187,7 +187,7 @@ structLevel2.withColumn("a", $"a".withField(
 ``` 
 
 Another common use-case is to perform these operations on array of structs. 
-To do this using the Scala APIs, we recommend combining the functions in this library with the functions provided in [spark-hofs](https://github.com/AbsaOSS/spark-hofs/tree/master):
+To do this using the Scala APIs, we recommend combining the functions in this library with the functions provided in [spark-hofs](https://github.com/AbsaOSS/spark-hofs/):
 
 ```bash
 spark-shell --jars mse_2.11-0.1.jar --packages "za.co.absa:spark-hofs_2.11:0.4.0"
