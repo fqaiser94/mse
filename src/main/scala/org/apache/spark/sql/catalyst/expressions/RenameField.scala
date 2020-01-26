@@ -10,10 +10,11 @@ import org.apache.spark.sql.types.StructType
   * Renames StructField in StructType.
   * Returns null if struct is null.
   * This is a no-op if schema doesn't contain any field with existingFieldName.
+  * If there are multiple fields with existingFieldName, they will all be renamed.
   *
-  * @param struct            : The struct to drop fields in.
-  * @param existingFieldName : The name of the fields to drop.
-  * @param newFieldName      : The name of the fields to drop.
+  * @param struct            : The struct to rename field in.
+  * @param existingFieldName : The name of the fields to rename.
+  * @param newFieldName      : The name to give the fields you want to rename.
   */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
