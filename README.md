@@ -119,7 +119,7 @@ structLevel1.withColumn("a", $"a".dropFields("b")).show
 
 ```
 
-You can also use these methods to manipulate fields in deeply nested StructType columns: 
+You can also use these methods to manipulate fields in nested StructType columns: 
 
 ```scala
 // Generate some example data  
@@ -148,19 +148,16 @@ structLevel2.printSchema
 
 // add new field to nested struct
 structLevel2.withColumn("a", $"a".withField(
-  "a", $"a.a".withField(
-    "d", lit(4)))).show
+  "a", $"a.a".withField("d", lit(4)))).show
 // +------------+
 // |           a|
 // +------------+
 // |[[1,, 3, 4]]|
 // +------------+
 
-
 // replace field in nested struct
 structLevel2.withColumn("a", $"a".withField(
-  "a", $"a.a".withField(
-    "b", lit(2)))).show
+  "a", $"a.a".withField("b", lit(2)))).show
 // +-----------+
 // |          a|
 // +-----------+
@@ -184,6 +181,92 @@ structLevel2.withColumn("a", $"a".withField(
 // +--------+
 // |[[1, 3]]|
 // +--------+
+```
+
+You can also manipulate **deeply** nested StructType columns using the aforementioned patterns 
+but it can be a little annoying to write out the full chain. For this scenario, this library also provides a few helper methods, 
+namely `add_struct_field`, `rename_struct_field`, `drop_struct_fields`. There is also a more general `update_struct` method
+which is useful for when you want to perform 2 or more (add, rename, drop) operations on a struct. You can use these methods as follows: 
+
+```scala
+// Generate some example data  
+val structLevel3 = spark.createDataFrame(sc.parallelize(
+    Row(Row(Row(Row(1, null, 3)))) :: Nil),
+    StructType(Seq(
+      StructField("a", StructType(Seq(
+        StructField("a", StructType(Seq(
+          StructField("a", StructType(Seq(
+              StructField("a", IntegerType),
+              StructField("b", IntegerType),
+              StructField("c", IntegerType))))))))))))).cache
+              
+structLevel3.show
+//+-----------+
+//|          a|
+//+-----------+
+//|[[[1,, 3]]]|
+//+-----------+
+
+structLevel3.printSchema
+//root
+// |-- a: struct (nullable = true)
+// |    |-- a: struct (nullable = true)
+// |    |    |-- a: struct (nullable = true)
+// |    |    |    |-- a: integer (nullable = true)
+// |    |    |    |-- b: integer (nullable = true)
+// |    |    |    |-- c: integer (nullable = true)
+
+// add new field to deeply nested struct
+structLevel3.withColumn("a", add_struct_field("a.a.a", "d", lit(4))).show
+// +--------------+                                                                
+// |             a|
+// +--------------+
+// |[[[1,, 3, 4]]]|
+// +--------------+
+
+// replace field in deeply nested struct
+structLevel3.withColumn("a", add_struct_field("a.a.a", "b", lit(2))).show
+// +-------------+
+// |            a|
+// +-------------+
+// |[[[1, 2, 3]]]|
+// +-------------+
+    
+// rename field in deeply nested struct
+structLevel3.withColumn("a",rename_struct_field("a.a.a", "b", "z")).printSchema
+// root
+//  |-- a: struct (nullable = true)
+//  |    |-- a: struct (nullable = true)
+//  |    |    |-- a: struct (nullable = true)
+//  |    |    |    |-- a: integer (nullable = true)
+//  |    |    |    |-- z: integer (nullable = true)
+//  |    |    |    |-- c: integer (nullable = true)
+
+// drop field in deeply nested struct
+structLevel3.withColumn("a", drop_struct_fields("a.a.a", "b")).show
+// +----------+
+// |         a|
+// +----------+
+// |[[[1, 3]]]|
+// +----------+
+
+// add, rename, and drop fields in deeply nested struct
+val result = structLevel3.withColumn("a", update_struct("a.a.a", $"a.a.a".dropFields("b").withFieldRenamed("c", "b").withField("c", lit(4))))
+result.show
+// +-------------+
+// |            a|
+// +-------------+
+// |[[[1, 3, 4]]]|
+// +-------------+
+
+result.printSchema
+// root
+//  |-- a: struct (nullable = true)
+//  |    |-- a: struct (nullable = true)
+//  |    |    |-- a: struct (nullable = true)
+//  |    |    |    |-- a: integer (nullable = true)
+//  |    |    |    |-- b: integer (nullable = true)
+//  |    |    |    |-- c: integer (nullable = false)
 ``` 
 
 Another common use-case is to perform these operations on array of structs. 
@@ -265,7 +348,6 @@ Feel free to submit an issue.
 # Upcoming features
 
 1. Publish to Maven Central.  
-2. Add a utility function so that users can manipulate deeply nested fields directly without having to write nested function calls.
-3. Add spark planning optimization rule to collapse multiple withField/withFieldRenamed/dropFields calls into a single operation.
-4. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
-5. Add python bindings. 
+2. Add spark planning optimization rule to collapse multiple withField/withFieldRenamed/dropFields calls into a single operation.
+3. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
+4. Add python bindings. 
