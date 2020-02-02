@@ -4,7 +4,7 @@ import com.mse.column.methods._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.test.SharedSparkSession
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, QueryTest, Row}
+import org.apache.spark.sql.{AnalysisException, Column, DataFrame, QueryTest, Row}
 import org.scalatest.Matchers
 
 class methodsTest extends QueryTest with SharedSparkSession with Matchers {
@@ -85,7 +85,7 @@ class methodsTest extends QueryTest with SharedSparkSession with Matchers {
   }
 
   test("add_struct_field, rename_struct_field, and drop_struct_fields should throw exception if field does not exist") {
-    Seq(
+    Seq[String => Column](
       add_struct_field(_, "d", lit("hello")),
       rename_struct_field(_, "b", "z"),
       drop_struct_fields(_, "c")
@@ -300,7 +300,7 @@ class methodsTest extends QueryTest with SharedSparkSession with Matchers {
   }
 
   test("update_struct should throw exception if first or intermediate fields do not exist") {
-    val func = update_struct(_, lit("hello"))
+    val func: String => Column = update_struct(_, lit("hello"))
 
     intercept[AnalysisException] {
       structLevel3.withColumn("a", func("xxx.b.a")).show(false)
