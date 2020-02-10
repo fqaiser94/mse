@@ -348,6 +348,5 @@ Feel free to submit an issue.
 # Upcoming features
 
 1. Publish to Maven Central.  
-2. Add spark planning optimization rule to collapse multiple withField/withFieldRenamed/dropFields calls into a single operation.
-3. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
-4. Add python bindings. 
+2. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
+3. Add python bindings. 
