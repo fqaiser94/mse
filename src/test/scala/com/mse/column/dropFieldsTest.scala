@@ -1,17 +1,27 @@
 package com.mse.column
 
 import com.mse.column.methods._
-import org.apache.spark.sql.test.SharedSparkSession
+import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
+import org.apache.spark.sql.execution.command.ExplainCommand
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, QueryTest, Row}
-import org.scalatest.Matchers
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row}
 
-class dropFieldsTest extends QueryTest with SharedSparkSession with Matchers {
+trait dropFieldsTests extends QueryTester {
 
   import testImplicits._
 
-  private lazy val df = spark.createDataFrame(sparkContext.parallelize(
+  private val structSchema: StructType = StructType(Seq(
+    StructField("a", IntegerType),
+    StructField("b", IntegerType),
+    StructField("c", IntegerType)))
+
+  lazy val structDf: DataFrame = spark.createDataFrame(sparkContext.parallelize(
     Row(Row(1, 2, 3)) :: Nil),
+    StructType(Seq(
+      StructField("a", structSchema))))
+
+  lazy val nullStructDf: DataFrame = spark.createDataFrame(sparkContext.parallelize(
+    Row(null) :: Nil),
     StructType(Seq(
       StructField("a", StructType(Seq(
         StructField("a", IntegerType),
@@ -26,25 +36,83 @@ class dropFieldsTest extends QueryTest with SharedSparkSession with Matchers {
 
   test("throw error if null fieldName supplied") {
     intercept[AnalysisException] {
-      df.withColumn("a", $"a".dropFields(null))
+      structDf.withColumn("a", $"a".dropFields(null))
     }.getMessage should include("fieldNames cannot contain null")
   }
 
   test("drop field in struct") {
     checkAnswer(
-      df.withColumn("a", $"a".dropFields("b")),
-      Row(Row(1, 3)) :: Nil)
+      structDf.withColumn("a", $"a".dropFields("b")),
+      Row(Row(1, 3)) :: Nil,
+      StructType(Seq(
+        StructField("a", StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("c", IntegerType)))))))
   }
 
   test("drop multiple fields in struct") {
     checkAnswer(
-      df.withColumn("a", $"a".dropFields("c", "a")),
-      Row(Row(2)) :: Nil)
+      structDf.withColumn("a", $"a".dropFields("c", "a")),
+      Row(Row(2)) :: Nil,
+      StructType(Seq(
+        StructField("a", StructType(Seq(
+          StructField("b", IntegerType)))))))
   }
 
   test("drop all fields in struct") {
     checkAnswer(
-      df.withColumn("a", $"a".dropFields("c", "a", "b")),
-      Row(null) :: Nil)
+      structDf.withColumn("a", $"a".dropFields("c", "a", "b")),
+      Row(Row()) :: Nil,
+      StructType(Seq(
+        StructField("a", StructType(Seq.empty)))))
+  }
+
+  test("drop multiple fields in struct with multiple dropFields calls") {
+    checkAnswer(
+      structDf.withColumn("a", $"a".dropFields("c").dropFields("a")),
+      Row(Row(2)) :: Nil,
+      StructType(Seq(
+        StructField("a", StructType(Seq(
+          StructField("b", IntegerType)))))))
+  }
+
+  test("return null for if struct is null") {
+    checkAnswer(
+      nullStructDf.withColumn("a", $"a".dropFields("c")),
+      Row(null) :: Nil,
+      StructType(Seq(
+        StructField("a", StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("b", IntegerType)))))))
+  }
+
+}
+
+class dropFieldsTest extends dropFieldsTests {
+
+  import testImplicits._
+
+  test("multiple dropFields calls will stay as multiple dropFields calls") {
+    val result = structDf.withColumn("a", $"a".dropFields("c").dropFields("a"))
+    val explain = ExplainCommand(result.queryExecution.logical).run(spark).head.getAs[String](0)
+
+    "drop_fields".r.findAllMatchIn(explain).size shouldEqual 2
+  }
+}
+
+class dropFieldsTestWithOptimization extends dropFieldsTests {
+
+  import testImplicits._
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    spark.experimental.extraOptimizations = SimplifyStructExpressions.rules
+  }
+
+  test("multiple dropFields calls should be collapsed in a single dropFields call") {
+    val result = structDf.withColumn("a", $"a".dropFields("c").dropFields("a"))
+    val explain = ExplainCommand(result.queryExecution.logical).run(spark).head.getAs[String](0)
+
+    "drop_fields".r.findAllMatchIn(explain).size shouldEqual 1
   }
 }

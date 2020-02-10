@@ -4,6 +4,8 @@ This library adds `withField`, `withFieldRenamed`, and `dropFields` (implicit) m
 The signature and behaviour of these methods is meant to be similar to their Dataset equivalents, namely the `withColumn`, `withColumnRenamed`, and `drop` methods.
 The methods themselves have been implemented using Catalyst Expressions and so should provide good performance (and certainly better than UDFs). 
 
+This library is currently a work-in-progress and may experience breaking changes between different versions. Version 1.0 is targeted to be the first stable release. 
+
 # Supported Spark versions
 MSE should work without any further requirements on Spark 2.4.x. 
 
@@ -11,7 +13,7 @@ MSE should work without any further requirements on Spark 2.4.x.
 
 ## SBT Project
 
-To include this library in an SBT project, you can use [sbt-github-packages plugin](https://github.com/djspiewak/sbt-github-packages). 
+To include this library in an SBT project, you can use the [sbt-github-packages plugin](https://github.com/djspiewak/sbt-github-packages). 
 See the link for up-to-date instructions but basically, you need to:  
 
 1. Include the plugin in `project/plugins.sbt`: 
@@ -22,7 +24,7 @@ addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.2.1")
 2. Include this library as a dependency in `build.sbt`: 
 ```scala
 libraryDependencies ++= Seq(
-  "mse" %% "mse" % "0.1.1"
+  "mse" %% "mse" % "0.1.3"
 )
 
 resolvers += Resolver.githubPackagesRepo("fqaiser94", "mse")
@@ -45,7 +47,7 @@ Download the latest jar from [GitHub packages](https://github.com/fqaiser94/mse/
 Start a spark-shell session and include the path to downloaded jar:    
 
 ```bash
-spark-shell --jars mse_2.11-0.1.jar
+spark-shell --jars mse_2.11-0.1.3.jar
 ``` 
 
 # Usage 
@@ -116,7 +118,6 @@ structLevel1.withColumn("a", $"a".dropFields("b")).show
 // +------+
 // |[1, 3]|
 // +------+
-
 ```
 
 You can also use these methods to manipulate fields in nested StructType columns: 
@@ -269,7 +270,7 @@ result.printSchema
 //  |    |    |    |-- c: integer (nullable = false)
 ``` 
 
-Another common use-case is to perform these operations on array of structs. 
+Another common use-case is to perform these operations on arrays of structs. 
 To do this using the Scala APIs, we recommend combining the functions in this library with the functions provided in [spark-hofs](https://github.com/AbsaOSS/spark-hofs/):
 
 ```bash
@@ -341,6 +342,48 @@ arrayOfStructs.withColumn("array", transform($"array", elem => elem.dropFields("
 // +----------------+
 ```
 
+# Catalyst Optimization Rules
+
+We also provide some Catalyst optimization rules that can be plugged into a Spark session to get better performance. 
+This is simple as including the following two lines of code at the start of your script:  
+
+```scala
+import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
+spark.experimental.extraOptimizations = SimplifyStructExpressions.rules
+``` 
+
+Spark will use these optimization rules to internally rewrite queries in a more optimal fashion. 
+For example, consider the following query and its corresponding physical plan: 
+
+```scala
+val query = structLevel1.withColumn("a", $"a".withField("d", lit(4)).withField("e", lit(5)))
+
+query.explain
+// == Physical Plan ==
+// *(1) Project [add_fields(add_fields(a#1, d, 4), e, 5) AS a#32343]
+// +- InMemoryTableScan [a#1]
+//       +- InMemoryRelation [a#1], StorageLevel(disk, memory, deserialized, 1 replicas)
+//             +- Scan ExistingRDD[a#1]
+```
+
+If we add the `SimplifyStructExpressions.rules` to our Spark session, we see a slightly different physical plan for the same query:
+
+```scala
+import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
+spark.experimental.extraOptimizations = SimplifyStructExpressions.rules
+
+query.explain
+// == Physical Plan ==
+// *(1) Project [add_fields(a#1, d, e, 4, 5) AS a#32343]
+// +- InMemoryTableScan [a#1]
+//       +- InMemoryRelation [a#1], StorageLevel(disk, memory, deserialized, 1 replicas)
+//             +- Scan ExistingRDD[a#1]
+```
+
+As you can see, the successive `add_fields` method calls have been collapsed into a single `add_fields` method call.  
+Theoretically, this should improve performance but for the most part, you won't notice much difference unless you're doing some particularly intense struct manipulation and/or working with a particularly large dataset.  
+
+
 # Questions/Thoughts/Concerns?
 
 Feel free to submit an issue. 
@@ -348,6 +391,5 @@ Feel free to submit an issue.
 # Upcoming features
 
 1. Publish to Maven Central.  
-2. Add spark planning optimization rule to collapse multiple withField/withFieldRenamed/dropFields calls into a single operation.
-3. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
-4. Add python bindings. 
+2. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
+3. Add python bindings. 
