@@ -1,17 +1,21 @@
 package org.apache.spark.sql.catalyst.expressions
 
-import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.scalatest.FunSuite
 import com.mse.column.methods._
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.scalatest.FunSuite
 
 class SimplifyStructExpressionsTest extends FunSuite {
 
   private val spark = SparkSession.builder().appName("spark-test").master("local").getOrCreate()
+  spark.experimental.extraOptimizations = Seq(SimplifyStructExpressions)
   private val sparkContext = spark.sparkContext
+  sparkContext.setLogLevel("ERROR")
+
   import spark.implicits._
 
-  private lazy val df = spark.createDataFrame(sparkContext.parallelize(
+  private val df: DataFrame = spark.createDataFrame(sparkContext.parallelize(
     Row(Row(1, 2, 3, 4)) :: Nil),
     StructType(Seq(
       StructField("a", StructType(Seq(
@@ -19,17 +23,28 @@ class SimplifyStructExpressionsTest extends FunSuite {
         StructField("b", IntegerType),
         StructField("c", IntegerType)))))))
 
-  def result = df.withColumn("a", $"a".withFieldRenamed("a", "x").withFieldRenamed("b", "y").withFieldRenamed("c", "z"))
+  test("rename rule") {
+    val result: DataFrame = df.withColumn("a", $"a".withFieldRenamed("a", "x").withFieldRenamed("b", "y").withFieldRenamed("c", "z"))
 
-  test("without rule") {
     result.explain
-    // *(1) Project [rename_field(rename_field(rename_field(a#1, a, x), b, y), c, z) AS a#3]
+    result.printSchema()
+    result.show(false)
   }
 
-  test("with rule") {
-    spark.experimental.extraOptimizations = Seq(SimplifyStructExpressions)
+  test("drop rule") {
+    val result: DataFrame = df.withColumn("a", $"a".dropFields("a").dropFields("b"))
+
     result.explain
+    result.printSchema()
+    result.show(false)
   }
 
+  test("add rule") {
+    val result: DataFrame = df.withColumn("a", $"a".withField("a", lit(4)).withField("b", lit(5)).withField("c", lit(6)))
+
+    result.explain
+    result.printSchema()
+    result.show(false)
+  }
 
 }
