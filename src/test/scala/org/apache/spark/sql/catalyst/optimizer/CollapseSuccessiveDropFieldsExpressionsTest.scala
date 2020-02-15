@@ -1,7 +1,8 @@
-package org.apache.spark.sql.catalyst.expressions
+package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.dsl.plans._
+import org.apache.spark.sql.catalyst.expressions.{Alias, DropFields, Expression, ExpressionEvalHelper, Literal}
 import org.apache.spark.sql.catalyst.plans.PlanTest
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
