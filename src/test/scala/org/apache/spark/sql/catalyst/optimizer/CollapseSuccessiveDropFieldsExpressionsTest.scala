@@ -1,6 +1,5 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.dsl.plans._
 import org.apache.spark.sql.catalyst.expressions.{Alias, DropFields, Expression, ExpressionEvalHelper, Literal}
 import org.apache.spark.sql.catalyst.plans.PlanTest
@@ -10,16 +9,11 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
 class CollapseSuccessiveDropFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
 
-  private val spark = SparkSession.builder().appName("spark-test").master("local").getOrCreate()
-  spark.experimental.extraOptimizations = Seq(CollapseSuccessiveDropFieldsExpressions)
-  private val sparkContext = spark.sparkContext
-  sparkContext.setLogLevel("ERROR")
-
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
       "CollapseDropFieldsExpressionsTest",
       FixedPoint(50),
-      CollapseSuccessiveDropFieldsExpressions) :: Nil
+      SimplifyStructManipulationExpressions) :: Nil
   }
 
   protected def assertEquivalentPlanAndEvaluation(e1: Expression, e2: Expression, value: Any): Unit = {
