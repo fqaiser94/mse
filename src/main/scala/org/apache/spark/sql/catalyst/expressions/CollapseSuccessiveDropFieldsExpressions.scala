@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 
 
 object CollapseSuccessiveDropFieldsExpressions extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+  def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case DropFields(DropFields(struct, a@_*), b@_*) =>
       DropFields(struct, a ++ b: _*)
   }
