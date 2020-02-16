@@ -9,21 +9,28 @@ object SimplifyStructManipulationExpressions extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     // TODO: should be dropFields, plural, with test
     case AddField(DropFields(expr, dropField), newFieldName, newFieldExpr) =>
-      val fields: Seq[Expression] = {
-        val fields = expr.dataType.asInstanceOf[StructType].fields
-        val temp = fields.zipWithIndex.flatMap {
-          case (field, i) if field.name != dropField => Seq(Literal(field.name), GetStructField(expr, i))
-          case (field, _) if field.name == newFieldName => Seq(Literal(newFieldName), newFieldExpr)
-          case _ => Seq.empty
-        }
+      combine(expr, dropField, newFieldName, newFieldExpr)
+    case DropFields(AddField(expr, newFieldName, newFieldExpr), dropField) =>
+      combine(expr, dropField, newFieldName, newFieldExpr)
+  }
 
-        if (fields.exists(x => x.name == newFieldName)) {
-          temp
-        } else {
-          temp ++ Seq(Literal(newFieldName), newFieldExpr)
-        }
+
+  private def combine(expr: Expression, dropField: String, newFieldName: String, newFieldExpr: Expression) = {
+    val fields: Seq[Expression] = {
+      val fields = expr.dataType.asInstanceOf[StructType].fields
+      val temp = fields.zipWithIndex.flatMap {
+        case (field, i) if field.name != dropField => Seq(Literal(field.name), GetStructField(expr, i))
+        case (field, _) if field.name == newFieldName => Seq(Literal(newFieldName), newFieldExpr)
+        case _ => Seq.empty
       }
 
-      CreateNamedStruct(fields)
+      if (fields.exists(x => x.name == newFieldName)) {
+        temp
+      } else {
+        temp ++ Seq(Literal(newFieldName), newFieldExpr)
+      }
+    }
+
+    CreateNamedStruct(fields)
   }
 }

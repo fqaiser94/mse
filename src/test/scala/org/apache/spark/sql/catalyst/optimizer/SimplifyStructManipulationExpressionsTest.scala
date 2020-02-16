@@ -55,10 +55,10 @@ class SimplifyStructManipulationExpressionsTest extends PlanTest with Expression
       expectedEvaluationResult,
       expectedDataType)
 
-    //    assertEquivalentPlanAndEvaluation(
-    //      DropFields(AddField(inputStruct, "d", newFieldValue), "c"),
-    //      expectedExpression,
-    //      expectedEvaluationResult,
-    //      expectedDataType)
+    assertEquivalentPlanAndEvaluation(
+      DropFields(AddField(inputStruct, "d", newFieldValue), "c"),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
   }
 }
