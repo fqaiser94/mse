@@ -11,9 +11,9 @@ class CollapseSuccessiveDropFieldsExpressionsTest extends PlanTest with Expressi
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
-      "CollapseDropFieldsExpressionsTest",
+      this.getClass.getSimpleName,
       FixedPoint(50),
-      CollapseSuccessiveAddFieldDropFieldsExpressions) :: Nil
+      CollapseSuccessiveCreateNamedStructAddFieldExpressions) :: Nil
   }
 
   protected def assertEquivalentPlanAndEvaluation(e1: Expression, e2: Expression, value: Any): Unit = {

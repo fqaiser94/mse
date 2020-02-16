@@ -7,6 +7,7 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{QueryTest, Row}
 import org.scalatest.Matchers
 
+// TODO: Delete
 class TempTest extends QueryTest with SharedSparkSession with Matchers {
 
   import testImplicits._
@@ -35,7 +36,7 @@ class TempTest extends QueryTest with SharedSparkSession with Matchers {
 
     runTest
 
-    spark.experimental.extraOptimizations = Seq(CollapseSuccessiveAddFieldDropFieldsExpressions)
+    spark.experimental.extraOptimizations = Seq(CollapseSuccessiveCreateNamedStructAddFieldExpressions)
     runTest
   }
 
