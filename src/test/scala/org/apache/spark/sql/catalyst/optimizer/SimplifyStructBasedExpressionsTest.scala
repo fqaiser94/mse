@@ -1,12 +1,12 @@
-package com.mse.column
+package org.apache.spark.sql.catalyst.optimizer
 
 import com.mse.column.methods._
 import org.apache.spark.sql.test.SharedSparkSession
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{AnalysisException, QueryTest, Row}
+import org.apache.spark.sql.{QueryTest, Row}
 import org.scalatest.Matchers
 
-class dropFieldsTest extends QueryTest with SharedSparkSession with Matchers {
+class SimplifyStructBasedExpressionsTest extends QueryTest with SharedSparkSession with Matchers {
 
   import testImplicits._
 
@@ -18,17 +18,16 @@ class dropFieldsTest extends QueryTest with SharedSparkSession with Matchers {
         StructField("b", IntegerType),
         StructField("c", IntegerType)))))))
 
-  test("throw error if withField is called on a column that is not struct dataType") {
-    intercept[AnalysisException] {
-      testData.withColumn("key", $"key".dropFields("a"))
-    }.getMessage should include("struct should be struct data type. struct is integer")
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    spark.experimental.extraOptimizations = SimplifyStructBasedExpressions.rules
   }
 
-  test("throw error if null fieldName supplied") {
-    intercept[AnalysisException] {
-      df.withColumn("a", $"a".dropFields(null))
-    }.getMessage should include("fieldNames cannot contain null")
-  }
+  /**
+    * dropFields should work same as without optimization in [[com.mse.column.dropFieldsTest]]
+    * this is mostly to check that [[org.apache.spark.sql.catalyst.optimizer.CollapseSuccessiveDropFieldsExpressions]] is working as expected
+    */
 
   test("drop field in struct") {
     checkAnswer(
@@ -42,17 +41,18 @@ class dropFieldsTest extends QueryTest with SharedSparkSession with Matchers {
       Row(Row(2)) :: Nil)
   }
 
+  test("drop multiple fields in struct with multiple dropFields calls") {
+    checkAnswer(
+      df.withColumn("a", $"a".dropFields("c").dropFields("a")),
+      Row(Row(2)) :: Nil)
+  }
+
   test("drop all fields in struct") {
     checkAnswer(
       df.withColumn("a", $"a".dropFields("c", "a", "b")),
       Row(null) :: Nil)
   }
 
-  test("drop multiple fields in struct with multiple dropFields calls") {
-    val result = df.withColumn("a", $"a".dropFields("c").dropFields("a"))
+  // TODO: more tests
 
-    checkAnswer(
-      result,
-      Row(Row(2)) :: Nil)
-  }
 }
