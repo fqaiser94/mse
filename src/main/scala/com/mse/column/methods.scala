@@ -2,7 +2,7 @@ package com.mse.column
 
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{AddField, DropFields, Expression, RenameField}
+import org.apache.spark.sql.catalyst.expressions.{AddField, DropFields, Expression, RenameFields}
 import org.apache.spark.sql.functions._
 
 object methods {
@@ -41,7 +41,7 @@ object methods {
       * @since 2.4.4
       */
     def withFieldRenamed(existingFieldName: String, newFieldName: String): Column = withExpr {
-      RenameField(expr, existingFieldName, newFieldName)
+      RenameFields(expr, existingFieldName, newFieldName)
     }
 
     private def withExpr(newExpr: Expression): Column = new Column(newExpr)

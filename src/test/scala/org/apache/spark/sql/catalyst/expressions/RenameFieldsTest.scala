@@ -6,7 +6,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
 
-class RenameFieldTest extends ExpressionTester {
+class RenameFieldsTest extends ExpressionTester {
 
   val (nonNullStruct, nullStruct, unsafeRowStruct) = {
     val schema = StructType(Seq(
@@ -27,18 +27,18 @@ class RenameFieldTest extends ExpressionTester {
       Literal.create(create_unsafe_row(fieldTypes, unsafeFieldValues), schema))
   }
 
-  test("prettyName should return \"drop_field\"") {
-    assert(RenameField(nullStruct, "a", "z").prettyName == "rename_field")
+  test("prettyName should return \"rename_fields\"") {
+    assert(RenameFields(nullStruct, "a", "z").prettyName == "rename_fields")
   }
 
   test("checkInputDataTypes should fail if struct is not a struct dataType") {
     nonNullInputs.foreach {
       case input if input.dataType.typeName == "struct" =>
-        val result = RenameField(input, "a", "z").checkInputDataTypes()
+        val result = RenameFields(input, "a", "z").checkInputDataTypes()
         val expected = TypeCheckResult.TypeCheckSuccess
         assert(result == expected)
       case input =>
-        val result = RenameField(input, "a", "z").checkInputDataTypes()
+        val result = RenameFields(input, "a", "z").checkInputDataTypes()
         val expected = TypeCheckResult.TypeCheckFailure(
           s"struct should be struct data type. struct is ${input.expr.dataType.typeName}")
         assert(result == expected)
@@ -46,25 +46,35 @@ class RenameFieldTest extends ExpressionTester {
   }
 
   test("checkInputDataTypes should succeed even if existingFieldName doesn't exist") {
-    assert(RenameField(nonNullStruct, "d", "z").checkInputDataTypes() ==
+    assert(RenameFields(nonNullStruct, "d", "z").checkInputDataTypes() ==
       TypeCheckResult.TypeCheckSuccess)
   }
 
   test("checkInputDataTypes should fail if existingFieldName passed in is null") {
-    assert(RenameField(nonNullStruct, null, "z").checkInputDataTypes() ==
+    assert(RenameFields(nonNullStruct, null, "z").checkInputDataTypes() ==
       TypeCheckResult.TypeCheckFailure(
         "existingFieldName cannot be null"))
   }
 
   test("checkInputDataTypes should fail if newFieldName passed in is null") {
-    assert(RenameField(nonNullStruct, "a", null).checkInputDataTypes() ==
+    assert(RenameFields(nonNullStruct, "a", null).checkInputDataTypes() ==
       TypeCheckResult.TypeCheckFailure(
         "newFieldName cannot be null"))
   }
 
+  test("checkInputDataTypes should fail if existingFieldNames is not the same length as newFieldNames") {
+    assert(RenameFields(nonNullStruct, Seq("a"), Seq.empty).checkInputDataTypes() ==
+      TypeCheckResult.TypeCheckFailure(
+        s"existingFieldNames should contain same number of elements as newFieldNames. existingFieldNames is of length 1. newFieldNames is of length 0."))
+
+    assert(RenameFields(nonNullStruct, Seq.empty, Seq("a")).checkInputDataTypes() ==
+      TypeCheckResult.TypeCheckFailure(
+        s"existingFieldNames should contain same number of elements as newFieldNames. existingFieldNames is of length 0. newFieldNames is of length 1."))
+  }
+
   test("should return null if struct = null") {
     checkEvaluation(
-      RenameField(nullStruct, "a", "z"),
+      RenameFields(nullStruct, "a", "z"),
       null,
       StructType(Seq(
         StructField("z", IntegerType),
@@ -80,7 +90,7 @@ class RenameFieldTest extends ExpressionTester {
   ).foreach { case (structName, struct) =>
     test(s"should rename field in $structName") {
       checkEvaluation(
-        RenameField(struct, "a", "z"),
+        RenameFields(struct, "a", "z"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
           StructField("z", IntegerType),
@@ -92,7 +102,7 @@ class RenameFieldTest extends ExpressionTester {
 
     test(s"should rename all fields with existingFieldName to newFieldName in $structName") {
       checkEvaluation(
-        RenameField(struct, "c", "z"),
+        RenameFields(struct, "c", "z"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
           StructField("a", IntegerType),
@@ -102,9 +112,46 @@ class RenameFieldTest extends ExpressionTester {
         )))
     }
 
+    test(s"should rename multiple fields in $structName") {
+      checkEvaluation(
+        RenameFields(struct, Seq("a", "b"), Seq("x", "y")),
+        create_row(1, "hello", true, "world"),
+        StructType(Seq(
+          StructField("x", IntegerType),
+          StructField("y", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType)
+        )))
+    }
+
+    test(s"should rename only the fields that exist in $structName when given multiple fields to rename") {
+      checkEvaluation(
+        RenameFields(struct, Seq("a", "z", "b"), Seq("x", "hello", "y")),
+        create_row(1, "hello", true, "world"),
+        StructType(Seq(
+          StructField("x", IntegerType),
+          StructField("y", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType)
+        )))
+    }
+
+    test(s"should rename existingFieldName to the first newFieldName in $structName, if existingFieldName appears multiple times in existingFieldNames") {
+      checkEvaluation(
+        RenameFields(struct, Seq("a", "a"), Seq("x", "y")),
+        create_row(1, "hello", true, "world"),
+        StructType(Seq(
+          StructField("x", IntegerType),
+          StructField("b", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType)
+        )))
+    }
+
+
     test(s"should return original struct if given fieldName does not exist in $structName") {
       checkEvaluation(
-        RenameField(struct, "d", "z"),
+        RenameFields(struct, "d", "z"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
           StructField("a", IntegerType),
@@ -116,7 +163,7 @@ class RenameFieldTest extends ExpressionTester {
 
     test(s"should work in a nested fashion on $structName") {
       checkEvaluation(
-        RenameField(RenameField(struct, "a", "z"), "b", "y"),
+        RenameFields(RenameFields(struct, "a", "z"), "b", "y"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
           StructField("z", IntegerType),
