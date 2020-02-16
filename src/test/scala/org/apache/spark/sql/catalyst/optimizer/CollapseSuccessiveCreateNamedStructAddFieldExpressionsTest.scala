@@ -2,7 +2,7 @@ package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{AddField, Alias, CreateNamedStruct, DropFields, Expression, ExpressionEvalHelper, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AddField, Alias, CreateNamedStruct, Expression, ExpressionEvalHelper, Literal}
 import org.apache.spark.sql.catalyst.plans.PlanTest
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
@@ -29,35 +29,62 @@ class CollapseSuccessiveCreateNamedStructAddFieldExpressionsTest extends PlanTes
     assert(expectedExpression.dataType == expectedDataType)
   }
 
-  private val inputStruct = {
-    val schema = StructType(Seq(
+  test("should correctly combine AddField and CreateNamedStruct into CreateNamedStruct, where AddField is being used to add a new field") {
+    val newFieldValue = Literal.create(2, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", newFieldValue))
+    val expectedEvaluationResult = create_row(1, 2)
+    val expectedDataType = StructType(Seq(
       StructField("a", IntegerType, nullable = false),
-      StructField("b", IntegerType, nullable = false),
-      StructField("c", IntegerType, nullable = false)))
-    val fieldValues = Array(1, 2, 3)
-    Literal.create(create_row(fieldValues: _*), schema)
+      StructField("b", IntegerType, nullable = false)))
+
+    assertEquivalentPlanAndEvaluation(
+      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType))), "b", newFieldValue),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
   }
 
-  test("should correctly combine AddField and DropFields into CreateNamedStruct, where AddField is being used to add a new field") {
-    val newFieldValue = Literal.create(4, IntegerType)
-    val expectedExpression = CreateNamedStruct(Seq("a", GetStructField(inputStruct, 0), "b", GetStructField(inputStruct, 1), "d", newFieldValue))
-    val expectedEvaluationResult = create_row(1, 2, 4)
+  test("should correctly combine AddField and CreateNamedStruct into CreateNamedStruct, where original-CreateNamedStruct has multiple children and AddField is being used to add a new field") {
+    val newFieldValue = Literal.create(3, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType), "c", newFieldValue))
+    val expectedEvaluationResult = create_row(1, 2, 3)
     val expectedDataType = StructType(Seq(
       StructField("a", IntegerType, nullable = false),
       StructField("b", IntegerType, nullable = false),
-      StructField("d", IntegerType, nullable = false)))
+      StructField("c", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(DropFields(inputStruct, "c"), "d", newFieldValue),
-      expectedExpression,
-      expectedEvaluationResult,
-      expectedDataType)
-
-    assertEquivalentPlanAndEvaluation(
-      DropFields(AddField(inputStruct, "d", newFieldValue), "c"),
+      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType))), "c", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
   }
 
+  test("should correctly combine AddField and CreateNamedStruct into CreateNamedStruct, where AddField is being used to replace a an existing field") {
+    val newFieldValue = Literal.create(2, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", newFieldValue))
+    val expectedEvaluationResult = create_row(2)
+    val expectedDataType = StructType(Seq(StructField("a", IntegerType, nullable = false)))
+
+    assertEquivalentPlanAndEvaluation(
+      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType))), "a", newFieldValue),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+  }
+
+  test("should correctly combine AddField and CreateNamedStruct into CreateNamedStruct, where original-CreateNamedStruct has multiple children and AddField is being used to replace a an existing field") {
+    val newFieldValue = Literal.create(3, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", newFieldValue))
+    val expectedEvaluationResult = create_row(1, 3)
+    val expectedDataType = StructType(Seq(
+      StructField("a", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false)))
+
+    assertEquivalentPlanAndEvaluation(
+      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType))), "b", newFieldValue),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+  }
 }
