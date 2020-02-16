@@ -2,7 +2,7 @@ package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{AddField, Alias, CreateNamedStruct, DropFields, Expression, ExpressionEvalHelper, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AddField, Alias, CreateNamedStruct, DropFields, Expression, ExpressionEvalHelper, GetStructField, Literal}
 import org.apache.spark.sql.catalyst.plans.PlanTest
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
@@ -24,7 +24,7 @@ class SimplifyStructManipulationExpressionsTest extends PlanTest with Expression
     // TODO: delete
     println(actualPlan.treeString)
 
-    //comparePlans(actualPlan, expectedPlan)
+    comparePlans(actualPlan, expectedPlan)
     checkEvaluation(unoptimizedExpression, expectedValue)
     checkEvaluation(expectedExpression, expectedValue)
     assert(unoptimizedExpression.dataType == expectedDataType)
@@ -42,7 +42,7 @@ class SimplifyStructManipulationExpressionsTest extends PlanTest with Expression
 
   test("should combine AddField and DropFields call into a single CreateNamedStruct call") {
     val newFieldValue = Literal.create(4, IntegerType)
-    val expectedExpression = CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType), "d", newFieldValue))
+    val expectedExpression = CreateNamedStruct(Seq("a", GetStructField(inputStruct, 0), "b", GetStructField(inputStruct, 1), "d", newFieldValue))
     val expectedEvaluationResult = create_row(1, 2, 4)
     val expectedDataType = StructType(Seq(
       StructField("a", IntegerType, nullable = false),
