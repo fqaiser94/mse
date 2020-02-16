@@ -13,22 +13,22 @@ object CollapseSuccessiveAddFieldDropFieldsExpressions extends Rule[LogicalPlan]
       toCreateNamedStruct(structExpr, dropFields, newFieldName, newFieldExpr)
   }
 
-
   private def toCreateNamedStruct(structExpr: Expression, dropFields: Seq[String], newFieldName: String, newFieldExpr: Expression): CreateNamedStruct = {
-    val fields: Seq[Expression] = {
-      val fields = structExpr.dataType.asInstanceOf[StructType].fields
-      val temp = fields.zipWithIndex.flatMap {
-        case (field, i) if !dropFields.contains(field.name) => Seq(Literal(field.name), GetStructField(structExpr, i))
-        case (field, _) if field.name == newFieldName => Seq(Literal(newFieldName), newFieldExpr)
-        case _ => Seq.empty
-      }
+    val fieldNames: Array[String] = structExpr.dataType.asInstanceOf[StructType].fieldNames.filter(fieldName => !dropFields.contains(fieldName))
 
-      if (fields.exists(x => x.name == newFieldName)) {
-        temp
-      } else {
-        temp ++ Seq(Literal(newFieldName), newFieldExpr)
-      }
+    val newFieldIdx: Int = fieldNames.indexOf(newFieldName) match {
+      case -1 => fieldNames.length
+      case x => x
     }
+
+    val fields: Seq[Expression] =
+      fieldNames
+        .patch(newFieldIdx, Seq(newFieldName), 1)
+        .zipWithIndex
+        .flatMap {
+          case (fieldName, _) if fieldName == newFieldName => Seq(Literal(fieldName), newFieldExpr)
+          case (fieldName, i) => Seq(Literal(fieldName), GetStructField(structExpr, i))
+        }
 
     CreateNamedStruct(fields)
   }

@@ -37,7 +37,7 @@ class CollapseSuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with 
     Literal.create(create_row(fieldValues: _*), schema)
   }
 
-  test("should combine AddField and DropFields into CreateNamedStruct") {
+  test("should correctly combine AddField and DropFields into CreateNamedStruct, where AddField is being used to add a new field") {
     val newFieldValue = Literal.create(4, IntegerType)
     val expectedExpression = CreateNamedStruct(Seq("a", GetStructField(inputStruct, 0), "b", GetStructField(inputStruct, 1), "d", newFieldValue))
     val expectedEvaluationResult = create_row(1, 2, 4)
@@ -59,7 +59,28 @@ class CollapseSuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with 
       expectedDataType)
   }
 
-  test("should combine AddField and DropFields into CreateNamedStruct, where multiple fields are being dropped") {
+  test("should correctly combine AddField and DropFields into CreateNamedStruct, where AddField is being used to replace an existing field") {
+    val newFieldValue = Literal.create(4, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", newFieldValue, "b", GetStructField(inputStruct, 1)))
+    val expectedEvaluationResult = create_row(4, 2)
+    val expectedDataType = StructType(Seq(
+      StructField("a", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false)))
+
+    assertEquivalentPlanAndEvaluation(
+      AddField(DropFields(inputStruct, "c"), "a", newFieldValue),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+
+    assertEquivalentPlanAndEvaluation(
+      DropFields(AddField(inputStruct, "a", newFieldValue), "c"),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+  }
+
+  test("should correctly combine AddField and DropFields into CreateNamedStruct, where DropFields is being used to drop multiple fields") {
     val newFieldValue = Literal.create(4, IntegerType)
     val expectedExpression = CreateNamedStruct(Seq("a", GetStructField(inputStruct, 0), "d", newFieldValue))
     val expectedEvaluationResult = create_row(1, 4)
