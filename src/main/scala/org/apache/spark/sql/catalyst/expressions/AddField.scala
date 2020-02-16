@@ -24,6 +24,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
        {"a":1,"b":2}
   """)
 // scalastyle:on line.size.limit
+// TODO: add multiple fields at a time, but at that point shouldn't we just `extends CreateNamedStruct`?
 case class AddField(struct: Expression, fieldName: String, field: Expression)
   extends BinaryExpression {
 

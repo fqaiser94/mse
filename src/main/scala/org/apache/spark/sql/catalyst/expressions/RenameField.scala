@@ -26,6 +26,7 @@ import org.apache.spark.sql.types.StructType
        {"a":1, "c":2}
   """)
 // scalastyle:on line.size.limit
+// TODO: rename multiple fields at a time
 case class RenameField(struct: Expression, existingFieldName: String, newFieldName: String)
   extends UnaryExpression {
 
