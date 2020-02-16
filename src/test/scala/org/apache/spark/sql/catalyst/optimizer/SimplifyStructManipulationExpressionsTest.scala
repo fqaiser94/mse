@@ -17,25 +17,25 @@ class SimplifyStructManipulationExpressionsTest extends PlanTest with Expression
       SimplifyStructManipulationExpressions) :: Nil
   }
 
-  protected def assertEquivalentPlanAndEvaluation(e1: Expression, e2: Expression, expectedValue: Any, expectedDataType: DataType): Unit = {
-    val correctAnswer = Project(Alias(e2, "out")() :: Nil, OneRowRelation()).analyze
-    val actual = Optimize.execute(Project(Alias(e1, "out")() :: Nil, OneRowRelation()).analyze)
+  protected def assertEquivalentPlanAndEvaluation(unoptimizedExpression: Expression, expectedExpression: Expression, expectedValue: Any, expectedDataType: DataType): Unit = {
+    val actualPlan = Optimize.execute(Project(Alias(unoptimizedExpression, "out")() :: Nil, OneRowRelation()).analyze)
+    val expectedPlan = Project(Alias(expectedExpression, "out")() :: Nil, OneRowRelation()).analyze
 
     // TODO: delete
-    println(actual.treeString)
+    println(actualPlan.treeString)
 
-    //    comparePlans(actual, correctAnswer)
-    checkEvaluation(e1, expectedValue)
-    checkEvaluation(e2, expectedValue)
-    assert(e1.dataType == expectedDataType)
-    assert(e2.dataType == expectedDataType)
+    //comparePlans(actualPlan, expectedPlan)
+    checkEvaluation(unoptimizedExpression, expectedValue)
+    checkEvaluation(expectedExpression, expectedValue)
+    assert(unoptimizedExpression.dataType == expectedDataType)
+    assert(expectedExpression.dataType == expectedDataType)
   }
 
   private val inputStruct = {
     val schema = StructType(Seq(
-      StructField("a", IntegerType),
-      StructField("b", IntegerType),
-      StructField("c", IntegerType)))
+      StructField("a", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false),
+      StructField("c", IntegerType, nullable = false)))
     val fieldValues = Array(1, 2, 3)
     Literal.create(create_row(fieldValues: _*), schema)
   }
@@ -45,8 +45,8 @@ class SimplifyStructManipulationExpressionsTest extends PlanTest with Expression
     val expectedExpression = CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType), "d", newFieldValue))
     val expectedEvaluationResult = create_row(1, 2, 4)
     val expectedDataType = StructType(Seq(
-      StructField("a", IntegerType, nullable = true),
-      StructField("b", IntegerType, nullable = true),
+      StructField("a", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false),
       StructField("d", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
