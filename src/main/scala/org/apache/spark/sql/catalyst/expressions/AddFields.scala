@@ -29,42 +29,34 @@ import org.apache.spark.sql.types.StructType
 case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]) extends Expression {
 
   private lazy val createNamedStruct = {
-    //    val tempFields: Seq[Expression] =
-    //      struct
-    //        .dataType
-    //        .asInstanceOf[StructType]
-    //        .fieldNames
-    //        .zipWithIndex
-    //        .map {
-    //          case (fieldName, i) =>
-    //            // TODO: should be collect last
-    //            fieldNames.zip(fields).collectFirst {
-    //              case (name, value) if name == fieldName => (fieldName, value)
-    //            }.getOrElse((fieldName, GetStructField(struct, i)))
-    //        }
-    //        .flatMap { case (fieldName, expression) => Seq(Literal(fieldName), expression) }
+    val newFields: Seq[Expression] = {
+      def loop(existingFields: Seq[(String, Expression)], newFields: Seq[(String, Expression)]): Seq[Expression] = {
+        if (newFields.nonEmpty) {
+          val existingFieldNames = existingFields.map(_._1)
+          val (newFieldName, newFieldExpression) = newFields.head
 
-    lazy val newFields: Seq[Expression] = {
-      var fields: Seq[(String, Expression)] = struct.dataType.asInstanceOf[StructType].fields.zipWithIndex.map { case (field, i) => (field.name, GetStructField(struct, i)) }
-      fieldNames.zip(fieldExpressions).foreach { case (newFieldName, newFieldExpression) =>
-        var abc: Seq[(String, Expression)] = Seq(Tuple2(newFieldName, newFieldExpression))
-        fields = fields.map {
-          case (fieldName, fieldExpression) if fieldName == newFieldName =>
-            abc = Seq.empty
-            (fieldName, newFieldExpression)
-          case (fieldName, fieldExpression) => (fieldName, fieldExpression)
+          if (existingFieldNames.contains(newFieldName)) {
+            loop(
+              existingFields.map {
+                case (fieldName, _) if fieldName == newFieldName => (fieldName, newFieldExpression)
+                case x => x
+              },
+              newFields.drop(1))
+          } else {
+            loop(
+              existingFields :+ newFields.head,
+              newFields.drop(1))
+          }
+        } else {
+          existingFields.flatMap {
+            case (fieldName, expression) => Seq(Literal(fieldName), expression)
+          }
         }
-
-        if (abc.nonEmpty) {
-          fields = fields ++ abc
-        }
-
-        fields
       }
 
-      fields.flatMap {
-        case (name, expr) => Seq(Literal(name), expr)
-      }
+      val existingFields: Seq[(String, Expression)] = struct.dataType.asInstanceOf[StructType].fields.zipWithIndex.map { case (field, i) => (field.name, GetStructField(struct, i)) }
+      val newFields = fieldNames.zip(fieldExpressions)
+      loop(existingFields, newFields)
     }
 
     CreateNamedStruct(newFields)
