@@ -136,8 +136,22 @@ class RenameFieldsTest extends ExpressionTester {
         )))
     }
 
-    test(s"should rename existingFieldName to the first newFieldName in $structName, if existingFieldName appears multiple times in existingFieldNames") {
+    test(s"should rename existingFieldName to newFieldName in $structName in the given order") {
       checkEvaluation(
+        // a is renamed to x
+        // x is then renamed to y
+        RenameFields(struct, Seq("a", "x"), Seq("x", "y")),
+        create_row(1, "hello", true, "world"),
+        StructType(Seq(
+          StructField("y", IntegerType),
+          StructField("b", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType)
+        )))
+
+      checkEvaluation(
+        // a is renamed to x
+        // a no longer exists when user asks to rename a to y
         RenameFields(struct, Seq("a", "a"), Seq("x", "y")),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
