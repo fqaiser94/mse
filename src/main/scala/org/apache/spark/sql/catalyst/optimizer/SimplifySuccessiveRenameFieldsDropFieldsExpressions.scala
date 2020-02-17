@@ -8,45 +8,29 @@ import org.apache.spark.sql.types.StructType
 object SimplifySuccessiveRenameFieldsDropFieldsExpressions extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case RenameFields(DropFields(structExpr, dropFields@_*), existingFieldNames, newFieldNames) =>
-      val pairs = existingFieldNames.zip(newFieldNames)
-      val fields: Seq[Expression] =
-        structExpr
-          .dataType
-          .asInstanceOf[StructType]
-          .fields
-          .zipWithIndex
-          .filter { case (field, i) => !dropFields.contains(field.name) }
-          .flatMap {
-            case (field, i) =>
-              val fieldName = pairs.collectFirst {
-                case (existingFieldName, newFieldName) if existingFieldName == field.name => newFieldName
-              }.getOrElse(field.name)
-
-              Seq(Literal(fieldName), GetStructField(structExpr, i))
-          }
-
-      CreateNamedStruct(fields)
+      toCreateNamedStruct(structExpr, existingFieldNames, newFieldNames, dropFields, Seq.empty)
     case DropFields(RenameFields(structExpr, existingFieldNames, newFieldNames), dropFields@_*) =>
-      val pairs = existingFieldNames.zip(newFieldNames)
-      val fields: Seq[Expression] =
-        structExpr
-          .dataType
-          .asInstanceOf[StructType]
-          .fields
-          .zipWithIndex
-          .map {
-            case (field, i) =>
-              val fieldName = pairs.collectFirst {
-                case (existingFieldName, newFieldName) if existingFieldName == field.name => newFieldName
-              }.getOrElse(field.name)
+      toCreateNamedStruct(structExpr, existingFieldNames, newFieldNames, Seq.empty, dropFields)
+  }
 
-              (fieldName, GetStructField(structExpr, i))
-          }
-          .filter { case (fieldName, _) => !dropFields.contains(fieldName) }
-          .flatMap {
-            case (fieldName, expression) => Seq(Literal(fieldName), expression)
-          }
+  private def toCreateNamedStruct(structExpr: Expression, existingFieldNames: Seq[String], newFieldNames: Seq[String], dropFieldsBeforeRename: Seq[String], dropFieldsAfterRename: Seq[String]): CreateNamedStruct = {
+    val fields: Seq[Expression] =
+      structExpr
+        .dataType
+        .asInstanceOf[StructType]
+        .fields
+        .zipWithIndex
+        .filter { case (field, _) => !dropFieldsBeforeRename.contains(field.name) }
+        .map { case (field, i) =>
+          val fieldName = existingFieldNames.zip(newFieldNames).collectFirst {
+            case (existingFieldName, newFieldName) if existingFieldName == field.name => newFieldName
+          }.getOrElse(field.name)
 
-      CreateNamedStruct(fields)
+          (fieldName, GetStructField(structExpr, i))
+        }
+        .filter { case (fieldName, _) => !dropFieldsAfterRename.contains(fieldName) }
+        .flatMap { case (fieldName, expression) => Seq(Literal(fieldName), expression) }
+
+    CreateNamedStruct(fields)
   }
 }
