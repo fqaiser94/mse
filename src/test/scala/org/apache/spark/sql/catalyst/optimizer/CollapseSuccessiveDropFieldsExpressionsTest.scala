@@ -13,7 +13,7 @@ class CollapseSuccessiveDropFieldsExpressionsTest extends PlanTest with Expressi
     val batches: Seq[Optimize.Batch] = Batch(
       this.getClass.getSimpleName,
       FixedPoint(50),
-      CollapseSuccessiveCreateNamedStructAddFieldExpressions) :: Nil
+      CollapseSuccessiveDropFieldsExpressions) :: Nil
   }
 
   protected def assertEquivalentPlanAndEvaluation(e1: Expression, e2: Expression, value: Any): Unit = {
