@@ -8,13 +8,13 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation,
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
 
-class CollapseSuccessiveCreateNamedStructAddFieldExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveAddFieldCreateNamedStructExpressionsTest extends PlanTest with ExpressionEvalHelper {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
       this.getClass.getSimpleName,
       FixedPoint(50),
-      CollapseSuccessiveCreateNamedStructAddFieldExpressions) :: Nil
+      SimplifySuccessiveAddFieldCreateNamedStructExpressions) :: Nil
   }
 
   // TODO: this function is copied in a bunch of places

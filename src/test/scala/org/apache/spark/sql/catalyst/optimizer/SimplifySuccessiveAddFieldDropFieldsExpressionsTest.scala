@@ -8,13 +8,13 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation,
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
 
-class CollapseSuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
       this.getClass.getSimpleName,
       FixedPoint(50),
-      CollapseSuccessiveAddFieldDropFieldsExpressions) :: Nil
+      SimplifySuccessiveAddFieldDropFieldsExpressions) :: Nil
   }
 
   protected def assertEquivalentPlanAndEvaluation(unoptimizedExpression: Expression, expectedExpression: Expression, expectedValue: Any, expectedDataType: DataType): Unit = {

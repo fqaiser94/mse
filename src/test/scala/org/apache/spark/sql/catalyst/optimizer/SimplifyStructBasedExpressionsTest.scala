@@ -26,7 +26,7 @@ class SimplifyStructBasedExpressionsTest extends QueryTest with SharedSparkSessi
 
   /**
     * dropFields should work same as without optimization in [[com.mse.column.dropFieldsTest]]
-    * this is mostly to check that [[org.apache.spark.sql.catalyst.optimizer.CollapseSuccessiveDropFieldsExpressions]] is working as expected
+    * this is mostly to check that [[org.apache.spark.sql.catalyst.optimizer.SimplifySuccessiveDropFieldsExpressions]] is working as expected
     */
 
   test("drop field in struct") {

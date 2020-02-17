@@ -8,16 +8,16 @@ object SimplifyStructBasedExpressions {
     // TODO: add add
     // TODO: rename rename
     // drop drop
-    CollapseSuccessiveDropFieldsExpressions,
+    SimplifySuccessiveDropFieldsExpressions,
     // TODO: add rename
     // TODO: rename add
     // TODO: drop rename
     // TODO: rename drop
     // add drop
     // drop add
-    CollapseSuccessiveAddFieldDropFieldsExpressions,
+    SimplifySuccessiveAddFieldDropFieldsExpressions,
     // add struct
-    CollapseSuccessiveCreateNamedStructAddFieldExpressions
+    SimplifySuccessiveAddFieldCreateNamedStructExpressions
     // TODO: rename struct
     // TODO: drop struct
   )

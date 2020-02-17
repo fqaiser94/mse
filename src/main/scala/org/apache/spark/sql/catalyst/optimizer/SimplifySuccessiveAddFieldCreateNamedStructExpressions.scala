@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.StructType
 
-object CollapseSuccessiveCreateNamedStructAddFieldExpressions extends Rule[LogicalPlan] {
+object SimplifySuccessiveAddFieldCreateNamedStructExpressions extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case AddField(structExpr@CreateNamedStruct(_), newFieldName, newFieldExpr) =>
       toCreateNamedStruct(structExpr, newFieldName, newFieldExpr)

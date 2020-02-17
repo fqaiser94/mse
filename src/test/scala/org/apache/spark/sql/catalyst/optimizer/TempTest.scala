@@ -36,7 +36,7 @@ class TempTest extends QueryTest with SharedSparkSession with Matchers {
 
     runTest
 
-    spark.experimental.extraOptimizations = Seq(CollapseSuccessiveCreateNamedStructAddFieldExpressions)
+    spark.experimental.extraOptimizations = Seq(SimplifySuccessiveAddFieldCreateNamedStructExpressions)
     runTest
   }
 
