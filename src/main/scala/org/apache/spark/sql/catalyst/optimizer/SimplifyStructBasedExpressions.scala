@@ -6,7 +6,8 @@ import org.apache.spark.sql.catalyst.rules.Rule
 object SimplifyStructBasedExpressions {
   val rules: Seq[Rule[LogicalPlan]] = Seq(
     // TODO: add add
-    // TODO: rename rename
+    // rename rename
+    SimplifySuccessiveRenameFieldsExpressions,
     // drop drop
     SimplifySuccessiveDropFieldsExpressions,
     // TODO: add rename
