@@ -2,13 +2,13 @@ package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{AddField, Alias, CreateNamedStruct, Expression, ExpressionEvalHelper, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AddFields, Alias, CreateNamedStruct, Expression, ExpressionEvalHelper, Literal}
 import org.apache.spark.sql.catalyst.plans.PlanTest
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
 
-class SimplifySuccessiveAddFieldCreateNamedStructExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveAddFieldsCreateNamedStructExpressionsTest extends PlanTest with ExpressionEvalHelper {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
@@ -38,7 +38,7 @@ class SimplifySuccessiveAddFieldCreateNamedStructExpressionsTest extends PlanTes
       StructField("b", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType))), "b", newFieldValue),
+      AddFields(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType))), "b", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
@@ -54,7 +54,7 @@ class SimplifySuccessiveAddFieldCreateNamedStructExpressionsTest extends PlanTes
       StructField("c", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType))), "c", newFieldValue),
+      AddFields(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType))), "c", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
@@ -67,7 +67,7 @@ class SimplifySuccessiveAddFieldCreateNamedStructExpressionsTest extends PlanTes
     val expectedDataType = StructType(Seq(StructField("a", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType))), "a", newFieldValue),
+      AddFields(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType))), "a", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
@@ -82,7 +82,7 @@ class SimplifySuccessiveAddFieldCreateNamedStructExpressionsTest extends PlanTes
       StructField("b", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType))), "b", newFieldValue),
+      AddFields(CreateNamedStruct(Seq("a", Literal.create(1, IntegerType), "b", Literal.create(2, IntegerType))), "b", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)

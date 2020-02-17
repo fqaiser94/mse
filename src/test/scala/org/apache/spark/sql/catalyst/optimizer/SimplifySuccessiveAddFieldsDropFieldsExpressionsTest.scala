@@ -2,13 +2,13 @@ package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{AddField, Alias, CreateNamedStruct, DropFields, Expression, ExpressionEvalHelper, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AddFields, Alias, CreateNamedStruct, DropFields, Expression, ExpressionEvalHelper, GetStructField, Literal}
 import org.apache.spark.sql.catalyst.plans.PlanTest
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
 
-class SimplifySuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveAddFieldsDropFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
@@ -47,13 +47,13 @@ class SimplifySuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with 
       StructField("d", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(DropFields(inputStruct, "c"), "d", newFieldValue),
+      AddFields(DropFields(inputStruct, "c"), "d", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(AddField(inputStruct, "d", newFieldValue), "c"),
+      DropFields(AddFields(inputStruct, "d", newFieldValue), "c"),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
@@ -68,13 +68,13 @@ class SimplifySuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with 
       StructField("b", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(DropFields(inputStruct, "c"), "a", newFieldValue),
+      AddFields(DropFields(inputStruct, "c"), "a", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(AddField(inputStruct, "a", newFieldValue), "c"),
+      DropFields(AddFields(inputStruct, "a", newFieldValue), "c"),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
@@ -89,13 +89,13 @@ class SimplifySuccessiveAddFieldDropFieldsExpressionsTest extends PlanTest with 
       StructField("d", IntegerType, nullable = false)))
 
     assertEquivalentPlanAndEvaluation(
-      AddField(DropFields(inputStruct, "b", "c"), "d", newFieldValue),
+      AddFields(DropFields(inputStruct, "b", "c"), "d", newFieldValue),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(AddField(inputStruct, "d", newFieldValue), "b", "c"),
+      DropFields(AddFields(inputStruct, "d", newFieldValue), "b", "c"),
       expectedExpression,
       expectedEvaluationResult,
       expectedDataType)

@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
-class AddFieldTest extends ExpressionTester {
+class AddFieldsTest extends ExpressionTester {
 
   val (nonNullStruct, nullStruct, unsafeRowStruct) = {
     val schema = StructType(Seq(
@@ -24,18 +24,18 @@ class AddFieldTest extends ExpressionTester {
   }
 
   test("prettyName should return \"add_field\"") {
-    assert(AddField(nullStruct, "a", Literal(2)).prettyName == "add_field")
+    assert(AddFields(nullStruct, "a", Literal(2)).prettyName == "add_field")
   }
 
   test("checkInputDataTypes should fail if struct is not a struct dataType") {
     nonNullInputs
       .foreach {
         case inputStruct if inputStruct.dataType.typeName == "struct" =>
-          val result = AddField(inputStruct, "b", Literal(2)).checkInputDataTypes()
+          val result = AddFields(inputStruct, "b", Literal(2)).checkInputDataTypes()
           val expected = TypeCheckResult.TypeCheckSuccess
           assert(result == expected)
         case inputStruct =>
-          val result = AddField(inputStruct, "b", Literal(2)).checkInputDataTypes()
+          val result = AddFields(inputStruct, "b", Literal(2)).checkInputDataTypes()
           val expected = TypeCheckResult.TypeCheckFailure(
             s"struct should be struct data type. struct is ${inputStruct.expr.dataType.typeName}")
           assert(result == expected)
@@ -44,20 +44,20 @@ class AddFieldTest extends ExpressionTester {
 
   test("checkInputDataTypes should fail if fieldName = null") {
     assert({
-      val result = AddField(nonNullStruct, null, Literal.create(2, IntegerType)).checkInputDataTypes()
+      val result = AddFields(nonNullStruct, null, Literal.create(2, IntegerType)).checkInputDataTypes()
       val expected = TypeCheckResult.TypeCheckFailure("fieldName cannot be null")
       result == expected
     })
   }
 
   test("should return null if struct = null") {
-    checkEvaluation(AddField(nullStruct, "b", Literal(2)), null)
+    checkEvaluation(AddFields(nullStruct, "b", Literal(2)), null)
   }
 
   test("should add new non-null field to end of struct") {
     nonNullInputs.foreach { inputField =>
       checkEvaluation(
-        AddField(nonNullStruct, "d", inputField),
+        AddFields(nonNullStruct, "d", inputField),
         create_row(1, Seq("hello"), true, inputField.value))
     }
   }
@@ -65,7 +65,7 @@ class AddFieldTest extends ExpressionTester {
   test("should add new null field to end of struct") {
     nullInputs.foreach { inputField =>
       checkEvaluation(
-        AddField(nonNullStruct, "d", inputField),
+        AddFields(nonNullStruct, "d", inputField),
         create_row(1, Seq("hello"), true, null))
     }
   }
@@ -73,7 +73,7 @@ class AddFieldTest extends ExpressionTester {
   test("should replace field in-place with non-null value in struct") {
     nonNullInputs.foreach { inputField =>
       checkEvaluation(
-        AddField(nonNullStruct, "b", inputField),
+        AddFields(nonNullStruct, "b", inputField),
         create_row(1, inputField.value, true))
     }
   }
@@ -81,7 +81,7 @@ class AddFieldTest extends ExpressionTester {
   test("should replace field in-place with null value in struct") {
     nullInputs.foreach { inputField =>
       checkEvaluation(
-        AddField(nonNullStruct, "b", inputField),
+        AddFields(nonNullStruct, "b", inputField),
         create_row(1, null, true))
     }
   }
@@ -92,11 +92,11 @@ class AddFieldTest extends ExpressionTester {
       val struct = Literal.create(create_row(1, Literal.create(null, dataType).value), schema)
 
       checkEvaluation(
-        AddField(struct, "c", Literal.create(1, IntegerType)),
+        AddFields(struct, "c", Literal.create(1, IntegerType)),
         create_row(1, null, 1))
 
       checkEvaluation(
-        AddField(struct, "a", Literal.create(1, IntegerType)),
+        AddFields(struct, "a", Literal.create(1, IntegerType)),
         create_row(1, null))
     }
   }
@@ -108,12 +108,12 @@ class AddFieldTest extends ExpressionTester {
       val attributeReference = AttributeReference("a", literalValue.dataType)().at(0)
 
       checkEvaluation(
-        AddField(nonNullStruct, "d", attributeReference),
+        AddFields(nonNullStruct, "d", attributeReference),
         create_row(1, Seq("hello"), true, value),
         row)
 
       checkEvaluation(
-        AddField(nonNullStruct, "b", attributeReference),
+        AddFields(nonNullStruct, "b", attributeReference),
         create_row(1, value, true),
         row)
     }
@@ -121,13 +121,13 @@ class AddFieldTest extends ExpressionTester {
 
   test("should add new field to end of struct of UnsafeRow type") {
     checkEvaluation(
-      AddField(unsafeRowStruct, "d", Literal.create(2)),
+      AddFields(unsafeRowStruct, "d", Literal.create(2)),
       create_row(1, Seq("hello"), true, 2))
   }
 
   test("should replace field in struct of UnsafeRow type") {
     checkEvaluation(
-      AddField(unsafeRowStruct, "b", Literal.create(2)),
+      AddFields(unsafeRowStruct, "b", Literal.create(2)),
       create_row(1, 2, true))
   }
 

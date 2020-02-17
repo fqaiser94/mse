@@ -1,16 +1,16 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.catalyst.expressions.{AddField, CreateNamedStruct, DropFields, Expression, GetStructField, Literal}
+import org.apache.spark.sql.catalyst.expressions.{AddFields, CreateNamedStruct, DropFields, Expression, GetStructField, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.StructType
 
 object SimplifySuccessiveAddFieldDropFieldsExpressions extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
-    case AddField(DropFields(structExpr, dropFields@_*), newFieldName, newFieldExpr) =>
-      toCreateNamedStruct(structExpr, dropFields, newFieldName, newFieldExpr)
-    case DropFields(AddField(structExpr, newFieldName, newFieldExpr), dropFields@_*) =>
-      toCreateNamedStruct(structExpr, dropFields, newFieldName, newFieldExpr)
+    case AddFields(DropFields(structExpr, dropFields@_*), newFieldName, newFieldExpr) =>
+      toCreateNamedStruct(structExpr, dropFields, null, null)
+    case DropFields(AddFields(structExpr, newFieldName, newFieldExpr), dropFields@_*) =>
+      toCreateNamedStruct(structExpr, dropFields, null, null)
   }
 
   private def toCreateNamedStruct(structExpr: Expression, dropFields: Seq[String], newFieldName: String, newFieldExpr: Expression): CreateNamedStruct = {
@@ -30,6 +30,6 @@ object SimplifySuccessiveAddFieldDropFieldsExpressions extends Rule[LogicalPlan]
           case (fieldName, i) => Seq(Literal(fieldName), GetStructField(structExpr, i))
         }
 
-    CreateNamedStruct(fields)
+    CreateNamedStruct(Seq.empty)
   }
 }
