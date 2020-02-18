@@ -2,7 +2,9 @@ package org.apache.spark.sql.catalyst.expressions
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.Literal.TrueLiteral
+import org.apache.spark.sql.catalyst.expressions.codegen.Block._
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode}
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -24,27 +26,27 @@ import org.apache.spark.sql.types.StructType
        {"a":1,"b":2}
   """)
 // scalastyle:on line.size.limit
-// TODO: add multiple fields at a time, but at that point shouldn't we just `extends CreateNamedStruct`?
-// TOdO; rename to AddFields, note plural
+// TODO: need a test for what to do in case where multiple fields with the same name exist and that is the field user wants to replace
+//  what does withColumn do in this scenario? it replaces all columns with that name
 case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]) extends Expression {
 
-  private lazy val createNamedStruct = {
+  private def createNamedStruct = {
     val newFields: Seq[Expression] = {
       def loop(existingFields: Seq[(String, Expression)], newFields: Seq[(String, Expression)]): Seq[Expression] = {
         if (newFields.nonEmpty) {
           val existingFieldNames = existingFields.map(_._1)
-          val (newFieldName, newFieldExpression) = newFields.head
+          val newField@(newFieldName, _) = newFields.head
 
           if (existingFieldNames.contains(newFieldName)) {
             loop(
               existingFields.map {
-                case (fieldName, _) if fieldName == newFieldName => (fieldName, newFieldExpression)
+                case (fieldName, _) if fieldName == newFieldName => newField
                 case x => x
               },
               newFields.drop(1))
           } else {
             loop(
-              existingFields :+ newFields.head,
+              existingFields :+ newField,
               newFields.drop(1))
           }
         } else {
@@ -59,12 +61,13 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
       loop(existingFields, newFields)
     }
 
-    CreateNamedStruct(newFields)
+    val result = CreateNamedStruct(newFields)
+    If(IsNull(struct), Literal.create(null, result.dataType), result)
   }
 
   override val children: Seq[Expression] = createNamedStruct.children
 
-  override lazy val dataType: StructType = createNamedStruct.dataType
+  override lazy val dataType: StructType = createNamedStruct.dataType.asInstanceOf[StructType]
 
   override def nullable: Boolean = createNamedStruct.nullable
 
@@ -87,7 +90,7 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = createNamedStruct.doGenCode(ctx, ev)
 
-  override def prettyName: String = "add_field"
+  override def prettyName: String = "add_fields"
 }
 
 object AddFields {

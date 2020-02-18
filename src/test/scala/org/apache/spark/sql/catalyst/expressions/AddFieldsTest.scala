@@ -23,8 +23,8 @@ class AddFieldsTest extends ExpressionTester {
       Literal.create(create_unsafe_row(fieldTypes, unsafeFieldValues), schema))
   }
 
-  test("prettyName should return \"add_field\"") {
-    assert(AddFields(nullStruct, "a", Literal(2)).prettyName == "add_field")
+  test("prettyName should return \"add_fields\"") {
+    assert(AddFields(nullStruct, "a", Literal(2)).prettyName == "add_fields")
   }
 
   test("checkInputDataTypes should fail if struct is not a struct dataType") {
@@ -51,7 +51,9 @@ class AddFieldsTest extends ExpressionTester {
   }
 
   test("should return null if struct = null") {
-    checkEvaluation(AddFields(nullStruct, "b", Literal(2)), null)
+    checkEvaluation(
+      AddFields(nullStruct, "b", Literal(2)),
+      null)
   }
 
   test("should add new non-null field to end of struct") {
