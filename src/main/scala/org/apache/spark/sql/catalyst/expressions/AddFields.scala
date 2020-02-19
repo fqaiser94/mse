@@ -139,10 +139,11 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
     }
 
     val left = struct
-    val right = field
+    val rights = fieldExpressions
     val leftGen = left.genCode(ctx)
-    val rightGen = right.genCode(ctx)
-    val f: (String, String) => String = (structVar, _) => {
+    val rightGens = rights.map(_.genCode(ctx))
+    val resultCode: String = {
+      val structVar = leftGen.value
       val populateRowValuesVar = dataType.fields.zipWithIndex
         .map {
           case (structField, i) =>
@@ -172,32 +173,30 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
          |${ev.value} = new $rowClass($rowValuesVar);
           """.stripMargin
     }
-    val resultCode = f(leftGen.value, rightGen.value)
 
     if (nullable) {
       val nullSafeEval =
         leftGen.code + ctx.nullSafeExec(left.nullable, leftGen.isNull) {
-          rightGen.code + ctx.nullSafeExec(right.nullable, rightGen.isNull) {
-            s"""
-              ${ev.isNull} = false; // resultCode could change nullability.
-              $resultCode
-            """
-          }
+          s"""
+            ${ev.isNull} = false; // resultCode could change nullability.
+            $resultCode
+          """
         }
 
       ev.copy(code =
         code"""
-        boolean ${ev.isNull} = true;
-        ${CodeGenerator.javaType(dataType)} ${ev.value} = ${CodeGenerator.defaultValue(dataType)};
-        $nullSafeEval
-      """)
+          boolean ${ev.isNull} = true;
+          ${CodeGenerator.javaType(dataType)} ${ev.value} = ${CodeGenerator.defaultValue(dataType)};
+          $nullSafeEval
+        """)
     } else {
       ev.copy(code =
         code"""
-        ${leftGen.code}
-        ${rightGen.code}
-        ${CodeGenerator.javaType(dataType)} ${ev.value} = ${CodeGenerator.defaultValue(dataType)};
-        $resultCode""", isNull = FalseLiteral)
+          ${leftGen.code}
+          ${rightGens.map(_.code).mkString("\n")}
+          ${CodeGenerator.javaType(dataType)} ${ev.value} = ${CodeGenerator.defaultValue(dataType)};
+          $resultCode
+          """, isNull = FalseLiteral)
     }
   }
 
