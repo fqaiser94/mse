@@ -94,6 +94,7 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
     if (structValue == null) {
       null
     } else {
+      // TODO: this loop function could be generalized and shared
       def loop(existingFields: Seq[(String, Any)], addOrReplaceFields: Seq[(String, Any)]): Seq[(String, Any)] = {
         if (addOrReplaceFields.nonEmpty) {
           val existingFieldNames = existingFields.map(_._1)
@@ -127,34 +128,42 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
     val rowClass = classOf[GenericInternalRow].getName
     val rowValuesVar = ctx.freshName("rowValues")
 
-    val fieldName = fieldNames.head
-    val field = fieldExpressions.head
-
-    val fieldEval = field.genCode(ctx)
-
-    val ogStructType: StructType = struct.dataType.asInstanceOf[StructType]
-    val idxToPatch = {
-      val idx = ogStructType.fieldNames.indexOf(fieldName)
-      if (idx == -1) ogStructType.length else idx
-    }
-
-    val left = struct
-    val rights = fieldExpressions
-    val leftGen = left.genCode(ctx)
-    val rightGens = rights.map(_.genCode(ctx))
+    val structGen = struct.genCode(ctx)
+    val addOrReplaceFieldsGens = fieldExpressions.map(_.genCode(ctx))
     val resultCode: String = {
-      val structVar = leftGen.value
-      val populateRowValuesVar = dataType.fields.zipWithIndex
-        .map {
-          case (structField, i) =>
-            val (nullCheck, nonNullValue) = if (i == idxToPatch) {
-              (fieldEval.isNull, fieldEval.value)
-            } else {
-              Tuple2(
-                s"$structVar.isNullAt($i)",
-                CodeGenerator.getValue(structVar, structField.dataType, i.toString))
-            }
+      type FieldName = String
+      type NullCheck = String
+      type NonNullValue = String
 
+      def loop(existingFields: Seq[(FieldName, NullCheck, NonNullValue)], addOrReplaceFields: Seq[(FieldName, NullCheck, NonNullValue)]): Seq[(FieldName, NullCheck, NonNullValue)] = {
+        if (addOrReplaceFields.nonEmpty) {
+          val existingFieldNames = existingFields.map(_._1)
+          val newField@(newFieldName, _, _) = addOrReplaceFields.head
+
+          if (existingFieldNames.contains(newFieldName)) {
+            loop(
+              existingFields.map {
+                case (fieldName, _, _) if fieldName == newFieldName => newField
+                case x => x
+              },
+              addOrReplaceFields.drop(1))
+          } else {
+            loop(
+              existingFields :+ newField,
+              addOrReplaceFields.drop(1))
+          }
+        } else {
+          existingFields
+        }
+      }
+
+      val structVar = structGen.value
+      val existingFields: Seq[(FieldName, NullCheck, NonNullValue)] = ogStructType.fields.zipWithIndex.map { case (structField, i) => Tuple3(structField.name, s"$structVar.isNullAt($i)", CodeGenerator.getValue(structVar, structField.dataType, i.toString)) }
+      val addOrReplaceFields: Seq[(FieldName, NullCheck, NonNullValue)] = pairs.map { case (fieldName, fieldExpr) => val fieldEval = fieldExpr.genCode(ctx); Tuple3(fieldName, fieldEval.isNull.code, fieldEval.value.code) }
+      val newFields = loop(existingFields, addOrReplaceFields)
+      val populateRowValuesVar = newFields.zipWithIndex
+        .map {
+          case ((_, nullCheck, nonNullValue), i) =>
             s"""
                |if ($nullCheck) {
                | $rowValuesVar[$i] = null;
@@ -165,7 +174,6 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
         .mkString("\n|")
 
       s"""
-         |${fieldEval.code}
          |Object[] $rowValuesVar = new Object[${dataType.length}];
          |
          |$populateRowValuesVar
@@ -176,8 +184,9 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 
     if (nullable) {
       val nullSafeEval =
-        leftGen.code + ctx.nullSafeExec(left.nullable, leftGen.isNull) {
+        structGen.code + ctx.nullSafeExec(struct.nullable, structGen.isNull) {
           s"""
+            ${addOrReplaceFieldsGens.map(_.code).mkString("\n")}
             ${ev.isNull} = false; // resultCode could change nullability.
             $resultCode
           """
@@ -192,8 +201,8 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
     } else {
       ev.copy(code =
         code"""
-          ${leftGen.code}
-          ${rightGens.map(_.code).mkString("\n")}
+          ${structGen.code}
+          ${addOrReplaceFieldsGens.map(_.code).mkString("\n")}
           ${CodeGenerator.javaType(dataType)} ${ev.value} = ${CodeGenerator.defaultValue(dataType)};
           $resultCode
           """, isNull = FalseLiteral)
