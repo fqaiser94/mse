@@ -7,6 +7,8 @@ import org.apache.spark.unsafe.types.UTF8String
 
 class AddFieldsTest extends ExpressionTester {
 
+  // TODO: all tests should verify schema
+
   val (nonNullStruct, nullStruct, unsafeRowStruct) = {
     val schema = StructType(Seq(
       StructField("a", IntegerType),
@@ -131,6 +133,22 @@ class AddFieldsTest extends ExpressionTester {
     checkEvaluation(
       AddFields(unsafeRowStruct, "b", Literal.create(2)),
       create_row(1, 2, true))
+  }
+
+  test("should add and replace multiple fields") {
+    checkEvaluation(
+      AddFields(nonNullStruct, Seq("c", "d"), Seq(Literal.create(2), Literal.create(3))),
+      create_row(1, Seq("hello"), 2, 3))
+  }
+
+  test("should add and replace multiple fields with last provided expression") {
+    checkEvaluation(
+      AddFields(nonNullStruct, Seq("c", "c", "d", "d"), Seq(Literal.create(2), Literal.create(3), Literal.create(4), Literal.create(5))),
+      create_row(1, Seq("hello"), 3, 5))
+  }
+
+  test("should be able to handle attribute references during add and replace of multiple fields") {
+    // TODO:
   }
 
 }

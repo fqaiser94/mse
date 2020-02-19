@@ -167,9 +167,9 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
          |${fieldEval.code}
          |Object[] $rowValuesVar = new Object[${dataType.length}];
          |
-             |$populateRowValuesVar
+         |$populateRowValuesVar
          |
-             |${ev.value} = new $rowClass($rowValuesVar);
+         |${ev.value} = new $rowClass($rowValuesVar);
           """.stripMargin
     }
     val resultCode = f(leftGen.value, rightGen.value)
