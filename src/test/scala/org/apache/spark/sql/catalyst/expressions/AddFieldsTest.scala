@@ -60,91 +60,154 @@ class AddFieldsTest extends ExpressionTester {
 
   test("should add new non-null field to end of struct") {
     nonNullInputs.foreach { inputField =>
+      val expectedValue = create_row(1, Seq("hello"), true, inputField.value)
+
       checkEvaluation(
         AddFields(nonNullStruct, "d", inputField),
-        create_row(1, Seq("hello"), true, inputField.value))
+        expectedValue)
+
+      checkEvaluation(
+        AddFields(unsafeRowStruct, "d", inputField),
+        expectedValue)
     }
   }
 
   test("should add new null field to end of struct") {
     nullInputs.foreach { inputField =>
+      val expectedValue = create_row(1, Seq("hello"), true, null)
       checkEvaluation(
         AddFields(nonNullStruct, "d", inputField),
-        create_row(1, Seq("hello"), true, null))
+        expectedValue)
+
+      checkEvaluation(
+        AddFields(unsafeRowStruct, "d", inputField),
+        expectedValue)
     }
   }
 
   test("should replace field in-place with non-null value in struct") {
     nonNullInputs.foreach { inputField =>
+      val expectedValue = create_row(1, inputField.value, true)
+
       checkEvaluation(
         AddFields(nonNullStruct, "b", inputField),
-        create_row(1, inputField.value, true))
+        expectedValue)
+
+      checkEvaluation(
+        AddFields(unsafeRowStruct, "b", inputField),
+        expectedValue)
     }
   }
 
   test("should replace field in-place with null value in struct") {
     nullInputs.foreach { inputField =>
+      val expectedValue = create_row(1, null, true)
+
       checkEvaluation(
         AddFields(nonNullStruct, "b", inputField),
-        create_row(1, null, true))
+        expectedValue)
+
+      checkEvaluation(
+        AddFields(unsafeRowStruct, "b", inputField),
+        expectedValue)
     }
   }
 
-  test("should return any null fields in struct during add and replace") {
+  test("should return any null fields in struct during add operation") {
     differentDataTypes.foreach { dataType =>
       val schema = StructType(Seq(StructField("a", IntegerType), StructField("b", dataType)))
       val struct = Literal.create(create_row(1, Literal.create(null, dataType).value), schema)
+      val unsafeRowStruct = Literal.create(create_unsafe_row(schema.fields.map(_.dataType), Array(1, null)), schema)
 
       checkEvaluation(
         AddFields(struct, "c", Literal.create(1, IntegerType)),
         create_row(1, null, 1))
 
       checkEvaluation(
-        AddFields(struct, "a", Literal.create(1, IntegerType)),
-        create_row(1, null))
+        AddFields(unsafeRowStruct, "c", Literal.create(1, IntegerType)),
+        create_row(1, null, 1))
     }
   }
 
-  test("should be able to handle attribute references during add and replace") {
+  test("should return any null fields in struct during replace operation") {
+    differentDataTypes.foreach { dataType =>
+      val schema = StructType(Seq(StructField("a", IntegerType), StructField("b", dataType)))
+      val struct = Literal.create(create_row(1, Literal.create(null, dataType).value), schema)
+      val unsafeRowStruct = Literal.create(create_unsafe_row(schema.fields.map(_.dataType), Array(1, null)), schema)
+      val expectedValue = create_row(2, null)
+
+      checkEvaluation(
+        AddFields(struct, "a", Literal.create(2, IntegerType)),
+        expectedValue)
+
+      checkEvaluation(
+        AddFields(unsafeRowStruct, "a", Literal.create(2, IntegerType)),
+        expectedValue)
+    }
+  }
+
+  test("should be able to handle attribute references during add operation") {
     nonNullInputs.foreach { literalValue =>
       val value = literalValue.value
-      val row = create_row(value, nonNullStruct)
       val attributeReference = AttributeReference("a", literalValue.dataType)().at(0)
+      val expectedValue = create_row(1, Seq("hello"), true, value)
 
       checkEvaluation(
         AddFields(nonNullStruct, "d", attributeReference),
-        create_row(1, Seq("hello"), true, value),
-        row)
+        expectedValue,
+        create_row(value, nonNullStruct))
 
       checkEvaluation(
-        AddFields(nonNullStruct, "b", attributeReference),
-        create_row(1, value, true),
-        row)
+        AddFields(unsafeRowStruct, "d", attributeReference),
+        expectedValue,
+        create_row(value, unsafeRowStruct))
     }
   }
 
-  test("should add new field to end of struct of UnsafeRow type") {
-    checkEvaluation(
-      AddFields(unsafeRowStruct, "d", Literal.create(2)),
-      create_row(1, Seq("hello"), true, 2))
-  }
+  test("should be able to handle attribute references during replace operation") {
+    nonNullInputs.foreach { literalValue =>
+      val value = literalValue.value
+      val attributeReference = AttributeReference("a", literalValue.dataType)().at(0)
+      val expectedValue = create_row(1, value, true)
 
-  test("should replace field in struct of UnsafeRow type") {
-    checkEvaluation(
-      AddFields(unsafeRowStruct, "b", Literal.create(2)),
-      create_row(1, 2, true))
+      checkEvaluation(
+        AddFields(nonNullStruct, "b", attributeReference),
+        expectedValue,
+        create_row(value, nonNullStruct))
+
+      checkEvaluation(
+        AddFields(unsafeRowStruct, "b", attributeReference),
+        expectedValue,
+        create_row(value, unsafeRowStruct))
+    }
   }
 
   test("should add and replace multiple fields") {
+    val fieldNames = Seq("c", "d")
+    val fieldExpressions = Seq(Literal.create(2), Literal.create(3))
+    val expectedValue = create_row(1, Seq("hello"), 2, 3)
+
     checkEvaluation(
-      AddFields(nonNullStruct, Seq("c", "d"), Seq(Literal.create(2), Literal.create(3))),
-      create_row(1, Seq("hello"), 2, 3))
+      AddFields(nonNullStruct, fieldNames, fieldExpressions),
+      expectedValue)
+
+    checkEvaluation(
+      AddFields(unsafeRowStruct, fieldNames, fieldExpressions),
+      expectedValue)
   }
 
-  test("should add and replace multiple fields with last provided expression") {
+  test("should add and replace multiple fields in the order provided") {
+    val fieldNames = Seq("c", "c", "d", "d")
+    val fieldExpressions = Seq(Literal.create(2), Literal.create(3), Literal.create(4), Literal.create(5))
+    val expectedValue = create_row(1, Seq("hello"), 3, 5)
+
     checkEvaluation(
-      AddFields(nonNullStruct, Seq("c", "c", "d", "d"), Seq(Literal.create(2), Literal.create(3), Literal.create(4), Literal.create(5))),
-      create_row(1, Seq("hello"), 3, 5))
+      AddFields(nonNullStruct, fieldNames, fieldExpressions),
+      expectedValue)
+
+    checkEvaluation(
+      AddFields(unsafeRowStruct, fieldNames, fieldExpressions),
+      expectedValue)
   }
 
   test("should be able to handle attribute references during add and replace of multiple fields") {

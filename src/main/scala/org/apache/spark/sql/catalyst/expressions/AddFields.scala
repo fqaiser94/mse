@@ -177,6 +177,6 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 }
 
 object AddFields {
-  def apply(struct: Expression, fieldName: String, field: Expression): AddFields =
-    AddFields(struct, Seq(fieldName), Seq(field))
+  def apply(struct: Expression, fieldName: String, fieldExpression: Expression): AddFields =
+    AddFields(struct, Seq(fieldName), Seq(fieldExpression))
 }
