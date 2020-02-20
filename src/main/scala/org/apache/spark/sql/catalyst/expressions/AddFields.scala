@@ -28,7 +28,6 @@ import org.apache.spark.sql.types.{StructField, StructType}
 // TODO: need a test for what to do in case where multiple fields with the same name exist and that is the field user wants to replace
 //  what does withColumn do in this scenario? it replaces all columns with that name
 // TODO: test for fieldNames and fieldExpressions must be same length
-// TODO: tests adding multiple fields.
 case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]) extends Expression {
 
   private type FieldName = String

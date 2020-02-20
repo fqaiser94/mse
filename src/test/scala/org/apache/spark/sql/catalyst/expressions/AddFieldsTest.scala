@@ -241,8 +241,53 @@ class AddFieldsTest extends ExpressionTester {
       expectedSchema)
   }
 
-  test("should be able to handle attribute references during add and replace of multiple fields") {
-    // TODO:
+  test("should handle attribute references during add operation of multiple fields") {
+    val literalValue = Literal.create(1, IntegerType)
+    val value = literalValue.value
+    val attributeReference = AttributeReference("a", literalValue.dataType, literalValue.nullable)().at(0)
+
+    val fieldNames = Seq("d", "e")
+    val fieldExpressions = Seq(attributeReference, attributeReference)
+    val expectedValue = create_row(1, Seq("hello"), true, 1, 1)
+    val expectedSchema = schema.add(StructField("d", IntegerType, nullable = false))
+      .add(StructField("e", IntegerType, nullable = false))
+
+    checkEvaluationCustom(
+      AddFields(nonNullStruct, fieldNames, fieldExpressions),
+      expectedValue,
+      expectedSchema,
+      create_row(value, nonNullStruct))
+
+    checkEvaluationCustom(
+      AddFields(unsafeRowStruct, fieldNames, fieldExpressions),
+      expectedValue,
+      expectedSchema,
+      create_row(value, unsafeRowStruct))
+  }
+
+  test("should handle attribute references during replace operation of multiple fields") {
+    val literalValue = Literal.create(2, IntegerType)
+    val value = literalValue.value
+    val attributeReference = AttributeReference("a", literalValue.dataType, literalValue.nullable)().at(0)
+
+    val fieldNames = Seq("b", "c")
+    val fieldExpressions = Seq(attributeReference, attributeReference)
+    val expectedValue = create_row(1, 2, 2)
+    val expectedSchema = StructType(schema
+      .updated(1, StructField("b", IntegerType, nullable = false))
+      .updated(2, StructField("c", IntegerType, nullable = false)))
+
+    checkEvaluationCustom(
+      AddFields(nonNullStruct, fieldNames, fieldExpressions),
+      expectedValue,
+      expectedSchema,
+      create_row(value, nonNullStruct))
+
+    checkEvaluationCustom(
+      AddFields(unsafeRowStruct, fieldNames, fieldExpressions),
+      expectedValue,
+      expectedSchema,
+      create_row(value, unsafeRowStruct))
   }
 
 }
