@@ -8,6 +8,8 @@ import org.apache.spark.unsafe.types.UTF8String
 
 class RenameFieldsTest extends ExpressionTester {
 
+  // TODO: test for handling attribute reference
+
   val (nonNullStruct, nullStruct, unsafeRowStruct) = {
     val schema = StructType(Seq(
       StructField("a", IntegerType),
@@ -73,7 +75,7 @@ class RenameFieldsTest extends ExpressionTester {
   }
 
   test("should return null if struct = null") {
-    checkEvaluation(
+    checkEvaluationCustom(
       RenameFields(nullStruct, "a", "z"),
       null,
       StructType(Seq(
@@ -89,7 +91,7 @@ class RenameFieldsTest extends ExpressionTester {
     ("UnsafeRow", unsafeRowStruct)
   ).foreach { case (structName, struct) =>
     test(s"should rename field in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         RenameFields(struct, "a", "z"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
@@ -101,7 +103,7 @@ class RenameFieldsTest extends ExpressionTester {
     }
 
     test(s"should rename all fields with existingFieldName to newFieldName in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         RenameFields(struct, "c", "z"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
@@ -113,7 +115,7 @@ class RenameFieldsTest extends ExpressionTester {
     }
 
     test(s"should rename multiple fields in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         RenameFields(struct, Seq("a", "b"), Seq("x", "y")),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
@@ -125,7 +127,7 @@ class RenameFieldsTest extends ExpressionTester {
     }
 
     test(s"should rename only the fields that exist in $structName when given multiple fields to rename") {
-      checkEvaluation(
+      checkEvaluationCustom(
         RenameFields(struct, Seq("a", "z", "b"), Seq("x", "hello", "y")),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
@@ -137,7 +139,7 @@ class RenameFieldsTest extends ExpressionTester {
     }
 
     test(s"should rename existingFieldName to newFieldName in $structName in the given order") {
-      checkEvaluation(
+      checkEvaluationCustom(
         // a is renamed to x
         // x is then renamed to y
         RenameFields(struct, Seq("a", "x"), Seq("x", "y")),
@@ -149,7 +151,7 @@ class RenameFieldsTest extends ExpressionTester {
           StructField("c", StringType)
         )))
 
-      checkEvaluation(
+      checkEvaluationCustom(
         // a is renamed to x
         // a no longer exists when user asks to rename a to y
         RenameFields(struct, Seq("a", "a"), Seq("x", "y")),
@@ -164,7 +166,7 @@ class RenameFieldsTest extends ExpressionTester {
 
 
     test(s"should return original struct if given fieldName does not exist in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         RenameFields(struct, "d", "z"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
@@ -176,7 +178,7 @@ class RenameFieldsTest extends ExpressionTester {
     }
 
     test(s"should work in a nested fashion on $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         RenameFields(RenameFields(struct, "a", "z"), "b", "y"),
         create_row(1, "hello", true, "world"),
         StructType(Seq(

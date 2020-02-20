@@ -7,6 +7,9 @@ import org.apache.spark.unsafe.types.UTF8String
 
 class DropFieldsTest extends ExpressionTester {
 
+  // TODO: all tests should verify schema
+  // TODO: test for handling attribute reference
+
   val (nonNullStruct, nullStruct, unsafeRowStruct) = {
     val schema = StructType(Seq(
       StructField("a", IntegerType),

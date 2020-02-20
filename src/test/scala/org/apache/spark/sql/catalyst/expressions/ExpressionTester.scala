@@ -1,6 +1,7 @@
 package org.apache.spark.sql.catalyst.expressions
 
 import org.apache.spark.SparkFunSuite
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.{ArrayData, GenericArrayData}
 import org.apache.spark.sql.test.ExamplePointUDT
 import org.apache.spark.sql.types._
@@ -28,10 +29,11 @@ trait ExpressionTester extends SparkFunSuite with ExpressionEvalHelper {
   val nonNullInputs: Seq[Literal] = differentDataTypes.map(Literal.default)
   val nullInputs: Seq[Literal] = differentDataTypes.map(Literal.create(null, _))
 
-  def checkEvaluation(expression: => Expression,
+  def checkEvaluationCustom(expression: => Expression,
                       expected: Any,
-                      expectedDataType: DataType): Unit = {
-    checkEvaluation(expression, expected)
+                      expectedDataType: DataType,
+                      inputRow: InternalRow = EmptyRow): Unit = {
+    checkEvaluation(expression = expression, expected = expected, inputRow = inputRow)
     assert(expression.dataType == expectedDataType)
   }
 
