@@ -290,4 +290,36 @@ class AddFieldsTest extends ExpressionTester {
       create_row(value, unsafeRowStruct))
   }
 
+  test("should replace all fields with given name") {
+    val schema = StructType(Seq(
+      StructField("a", IntegerType),
+      StructField("a", BooleanType)))
+
+    val (nonNullStruct, unsafeRowStruct) = {
+      val fieldTypes = schema.fields.map(_.dataType)
+      val fieldValues = Array(1, true)
+      val unsafeFieldValues = Array[Any](1, true)
+
+      Tuple2(
+        Literal.create(create_row(fieldValues: _*), schema),
+        Literal.create(create_unsafe_row(fieldTypes, unsafeFieldValues), schema))
+    }
+
+    val inputField = Literal.create(2, IntegerType)
+    val expectedValue = create_row(2, 2)
+    val expectedSchema = StructType(Seq(
+      StructField("a", IntegerType, nullable = false),
+      StructField("a", IntegerType, nullable = false)))
+
+    checkEvaluationCustom(
+      AddFields(nonNullStruct, "a", inputField),
+      expectedValue,
+      expectedSchema)
+
+    checkEvaluationCustom(
+      AddFields(unsafeRowStruct, "a", inputField),
+      expectedValue,
+      expectedSchema)
+  }
+
 }
