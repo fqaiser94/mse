@@ -112,22 +112,22 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
       val structVar = structGen.value
       type NullCheck = String
       type NonNullValue = String
-      val existingFields: Seq[(FieldName, (NullCheck, NonNullValue))] = ogStructType.fields.zipWithIndex.map {
+      val existingFieldsCode: Seq[(FieldName, (NullCheck, NonNullValue))] = ogStructType.fields.zipWithIndex.map {
         case (structField, i) =>
           val nullCheck = s"$structVar.isNullAt($i)"
           val nonNullValue = CodeGenerator.getValue(structVar, structField.dataType, i.toString)
           (structField.name, (nullCheck, nonNullValue))
       }
-      val addOrReplaceFields: Seq[(FieldName, (NullCheck, NonNullValue))] = fieldNames.zip(addOrReplaceFieldsGens).map {
+      val addOrReplaceFieldsCode: Seq[(FieldName, (NullCheck, NonNullValue))] = fieldNames.zip(addOrReplaceFieldsGens).map {
         case (fieldName, fieldExprCode) =>
           val nullCheck = fieldExprCode.isNull.code
           val nonNullValue = fieldExprCode.value.code
           (fieldName, (nullCheck, nonNullValue))
       }
-      val newFields = loop(existingFields, addOrReplaceFields)
+      val newFieldsCode = loop(existingFieldsCode, addOrReplaceFieldsCode)
       val rowClass = classOf[GenericInternalRow].getName
       val rowValuesVar = ctx.freshName("rowValues")
-      val populateRowValuesVar = newFields.zipWithIndex.map {
+      val populateRowValuesVar = newFieldsCode.zipWithIndex.map {
         case ((_, (nullCheck, nonNullValue)), i) =>
           s"""
              |if ($nullCheck) {
