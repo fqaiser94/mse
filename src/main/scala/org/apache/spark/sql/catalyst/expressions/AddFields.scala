@@ -80,12 +80,11 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
     }
 
     if (fieldNames.contains(null)) {
-      return TypeCheckResult.TypeCheckFailure("fieldName cannot be null")
+      return TypeCheckResult.TypeCheckFailure("fieldNames cannot contain null")
     }
 
-    // TODO: add test for this
     if (fieldExpressions.contains(null)) {
-      return TypeCheckResult.TypeCheckFailure("fieldExpressions cannot be null")
+      return TypeCheckResult.TypeCheckFailure("fieldExpressions cannot contain null")
     }
 
     TypeCheckResult.TypeCheckSuccess

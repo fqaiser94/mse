@@ -45,7 +45,31 @@ class AddFieldsTest extends ExpressionTester {
   test("checkInputDataTypes should fail if fieldName = null") {
     assert({
       val result = AddFields(nonNullStruct, null, Literal.create(2, IntegerType)).checkInputDataTypes()
-      val expected = TypeCheckResult.TypeCheckFailure("fieldName cannot be null")
+      val expected = TypeCheckResult.TypeCheckFailure("fieldNames cannot contain null")
+      result == expected
+    })
+  }
+
+  test("checkInputDataTypes should fail if fieldExpression = null") {
+    assert({
+      val result = AddFields(nonNullStruct, "a", null).checkInputDataTypes()
+      val expected = TypeCheckResult.TypeCheckFailure("fieldExpressions cannot contain null")
+      result == expected
+    })
+  }
+
+  test("checkInputDataTypes should fail if fieldNames contains null") {
+    assert({
+      val result = AddFields(nonNullStruct, Seq("a", null), Seq(Literal.create(2, IntegerType), Literal.create(2, IntegerType))).checkInputDataTypes()
+      val expected = TypeCheckResult.TypeCheckFailure("fieldNames cannot contain null")
+      result == expected
+    })
+  }
+
+  test("checkInputDataTypes should fail if fieldExpressions contains null") {
+    assert({
+      val result = AddFields(nonNullStruct, Seq("a", "b"), Seq(Literal.create(2, IntegerType), null)).checkInputDataTypes()
+      val expected = TypeCheckResult.TypeCheckFailure("fieldExpressions cannot contain null")
       result == expected
     })
   }
