@@ -25,7 +25,6 @@ import org.apache.spark.sql.types.{StructField, StructType}
        {"a":1,"b":2}
   """)
 // scalastyle:on line.size.limit
-// TODO: test for fieldNames and fieldExpressions must be same length
 case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]) extends Expression {
 
   private type FieldName = String
@@ -85,6 +84,10 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 
     if (fieldExpressions.contains(null)) {
       return TypeCheckResult.TypeCheckFailure("fieldExpressions cannot contain null")
+    }
+
+    if (fieldNames.size != fieldExpressions.size) {
+      return TypeCheckResult.TypeCheckFailure("fieldNames and fieldExpressions cannot have different lengths")
     }
 
     TypeCheckResult.TypeCheckSuccess

@@ -74,6 +74,14 @@ class AddFieldsTest extends ExpressionTester {
     })
   }
 
+  test("checkInputDataTypes should fail if fieldNames and fieldExpressions are not the same length") {
+    assert({
+      val result = AddFields(nonNullStruct, Seq("a"), Seq.empty).checkInputDataTypes()
+      val expected = TypeCheckResult.TypeCheckFailure("fieldNames and fieldExpressions cannot have different lengths")
+      result == expected
+    })
+  }
+
   test("should return null if struct = null") {
     checkEvaluationCustom(
       AddFields(nullStruct, "d", Literal(2)),
