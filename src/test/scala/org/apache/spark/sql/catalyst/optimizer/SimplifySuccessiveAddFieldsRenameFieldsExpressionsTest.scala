@@ -121,6 +121,28 @@ class SimplifySuccessiveAddFieldsRenameFieldsExpressionsTest extends PlanTest wi
       expectedDataType)
   }
 
-  // TODO: test for null struct
+  test("should return null") {
+    val nullStruct = Literal.create(null, inputStruct.dataType)
+    val newFieldValue = Literal.create(4, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", GetStructField(nullStruct, 0), "b", GetStructField(nullStruct, 1), "b", GetStructField(nullStruct, 2), "x", newFieldValue))
+    val expectedEvaluationResult = null
+    val expectedDataType = StructType(Seq(
+      StructField("a", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false),
+      StructField("x", IntegerType, nullable = false)))
+
+    assertEquivalentPlanAndEvaluation(
+      RenameFields(AddFields(nullStruct, "c", newFieldValue), "c", "x"),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+
+    assertEquivalentPlanAndEvaluation(
+      AddFields(RenameFields(nullStruct, "c", "x"), "c", newFieldValue),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+  }
 }
 

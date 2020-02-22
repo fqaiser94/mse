@@ -118,4 +118,6 @@ class SimplifySuccessiveAddFieldsDropFieldsExpressionsTest extends PlanTest with
   }
 
   // TODO: drop multiple fields with the same given name
+
+  // TODO: test for null struct
 }

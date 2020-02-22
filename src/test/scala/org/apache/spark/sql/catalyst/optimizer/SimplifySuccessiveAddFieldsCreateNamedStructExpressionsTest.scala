@@ -87,4 +87,6 @@ class SimplifySuccessiveAddFieldsCreateNamedStructExpressionsTest extends PlanTe
       expectedEvaluationResult,
       expectedDataType)
   }
+
+  // TODO: test for null struct
 }

@@ -81,4 +81,6 @@ class SimplifySuccessiveRenameFieldsDropFieldsExpressionsTest extends PlanTest w
         StructField("b", IntegerType, nullable = false),
         StructField("z", IntegerType, nullable = false))))
   }
+
+  // TODO: test for null struct
 }

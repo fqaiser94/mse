@@ -110,4 +110,6 @@ class SimplifySuccessiveAddFieldsExpressionsTest extends PlanTest with Expressio
         StructField(nameC, exprC.dataType, exprC.nullable),
         StructField(nameD, exprD.dataType, exprD.nullable))))
   }
+
+  // TODO: test for null struct
 }

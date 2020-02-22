@@ -69,4 +69,6 @@ class SimplifySuccessiveRenameFieldsExpressionsTest extends PlanTest with Expres
         StructField("y", IntegerType),
         StructField("z", IntegerType))))
   }
+
+  // TODO: test for null struct
 }

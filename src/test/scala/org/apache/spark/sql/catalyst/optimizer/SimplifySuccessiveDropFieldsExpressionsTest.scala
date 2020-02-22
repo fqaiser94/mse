@@ -57,4 +57,6 @@ class SimplifySuccessiveDropFieldsExpressionsTest extends PlanTest with Expressi
       DropFields(inputStruct, "a", "b", "c", "d"),
       create_row(5, 6))
   }
+
+  // TODO: test for null struct
 }
