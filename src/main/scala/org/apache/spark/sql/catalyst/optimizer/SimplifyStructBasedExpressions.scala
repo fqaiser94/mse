@@ -11,19 +11,17 @@ object SimplifyStructBasedExpressions {
     SimplifySuccessiveRenameFieldsExpressions,
     // drop drop
     SimplifySuccessiveDropFieldsExpressions,
-    // add rename
-    // rename add
+    // add rename | rename add
     SimplifySuccessiveAddFieldsRenameFieldsExpressions,
-    // drop rename
-    // rename drop
+    // drop rename | rename drop
     SimplifySuccessiveRenameFieldsDropFieldsExpressions,
-    // add drop
-    // drop add
+    // add drop | drop add
     SimplifySuccessiveAddFieldsDropFieldsExpressions,
     // add struct
     SimplifySuccessiveAddFieldsCreateNamedStructExpressions,
     // rename struct
-    SimplifySuccessiveRenameFieldsCreateNamedStructExpressions
-    // TODO: drop struct
+    SimplifySuccessiveRenameFieldsCreateNamedStructExpressions,
+    // drop struct
+    SimplifySuccessiveDropFieldsCreateNamedStructExpressions
   )
 }
