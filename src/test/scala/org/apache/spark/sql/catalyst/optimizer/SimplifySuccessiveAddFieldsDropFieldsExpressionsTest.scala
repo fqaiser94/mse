@@ -100,4 +100,20 @@ class SimplifySuccessiveAddFieldsDropFieldsExpressionsTest extends PlanTest with
       expectedEvaluationResult,
       expectedDataType)
   }
+
+  test("should correctly combine AddField and DropFields into CreateNamedStruct, where DropFields is being used to drop a field that was just added") {
+    val newFieldValue = Literal.create(4, IntegerType)
+    val expectedExpression = CreateNamedStruct(Seq("a", GetStructField(inputStruct, 0), "b", GetStructField(inputStruct, 1), "c", GetStructField(inputStruct, 2)))
+    val expectedEvaluationResult = create_row(1, 2, 3)
+    val expectedDataType = StructType(Seq(
+      StructField("a", IntegerType, nullable = false),
+      StructField("b", IntegerType, nullable = false),
+      StructField("c", IntegerType, nullable = false)))
+
+    assertEquivalentPlanAndEvaluation(
+      DropFields(AddFields(inputStruct, "d", newFieldValue), "d"),
+      expectedExpression,
+      expectedEvaluationResult,
+      expectedDataType)
+  }
 }
