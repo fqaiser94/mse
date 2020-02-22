@@ -1,32 +1,42 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.catalyst.expressions.{AddFields, CreateNamedStruct, Expression}
+import org.apache.spark.sql.catalyst.expressions.{AddFields, CreateNamedStruct, EmptyRow, Expression, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 
 object SimplifySuccessiveAddFieldCreateNamedStructExpressions extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
-    case AddFields(structExpr: Expression, newFieldNames, newFieldExprs) =>
-      toCreateNamedStruct(structExpr, newFieldNames, newFieldExprs)
+    case AddFields(struct@CreateNamedStruct(_), addOrReplaceFieldNames, addOrReplaceFieldExprs) =>
+      val existingFields: Seq[(String, Expression)] = struct.nameExprs.zip(struct.valExprs).map { case (nameExpr, valExpr) =>
+        val name = nameExpr.eval(EmptyRow).toString
+        (name, valExpr)
+      }
+      val addOrReplaceFields: Seq[(String, Expression)] = addOrReplaceFieldNames.zip(addOrReplaceFieldExprs)
+      val newFields: Seq[Expression] = loop(existingFields, addOrReplaceFields).flatMap { case (name, expr) => Seq(Literal(name), expr) }
+
+      CreateNamedStruct(newFields)
   }
 
-  // TODO: this function is copied in a bunch of places
-  private def toCreateNamedStruct(structExpr: Expression, newFieldNames: Seq[String], newFieldExpr: Seq[Expression]): CreateNamedStruct = {
-    //    val fieldNames: Array[String] = structExpr.dataType.asInstanceOf[StructType].fieldNames
-    //
-    //    val newFieldIdx: Int = fieldNames.indexOf(newFieldName) match {
-    //      case -1 => fieldNames.length
-    //      case x => x
-    //    }
-    //
-    //    val fields: Seq[Expression] =
-    //      structExpr
-    //        .children
-    //        .grouped(2)
-    //        .toSeq
-    //        .patch(newFieldIdx, Seq(Seq(Literal(newFieldName), newFieldExpr)), 1)
-    //        .flatten
+  // TODO: function is used in a bunch of places
+  private def loop[V](existingFields: Seq[(String, V)], addOrReplaceFields: Seq[(String, V)]): Seq[(String, V)] = {
+    if (addOrReplaceFields.nonEmpty) {
+      val existingFieldNames = existingFields.map(_._1)
+      val newField@(newFieldName, _) = addOrReplaceFields.head
 
-    CreateNamedStruct(Seq.empty)
+      if (existingFieldNames.contains(newFieldName)) {
+        loop(
+          existingFields.map {
+            case (fieldName, _) if fieldName == newFieldName => newField
+            case x => x
+          },
+          addOrReplaceFields.drop(1))
+      } else {
+        loop(
+          existingFields :+ newField,
+          addOrReplaceFields.drop(1))
+      }
+    } else {
+      existingFields
+    }
   }
 }
