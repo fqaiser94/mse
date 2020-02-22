@@ -20,7 +20,7 @@ object SimplifyStructBasedExpressions {
     // drop add
     SimplifySuccessiveAddFieldsDropFieldsExpressions,
     // add struct
-    SimplifySuccessiveAddFieldCreateNamedStructExpressions
+    SimplifySuccessiveAddFieldsCreateNamedStructExpressions
     // TODO: rename struct
     // TODO: drop struct
   )

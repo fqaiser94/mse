@@ -14,7 +14,7 @@ class SimplifySuccessiveAddFieldsCreateNamedStructExpressionsTest extends PlanTe
     val batches: Seq[Optimize.Batch] = Batch(
       this.getClass.getSimpleName,
       FixedPoint(50),
-      SimplifySuccessiveAddFieldCreateNamedStructExpressions) :: Nil
+      SimplifySuccessiveAddFieldsCreateNamedStructExpressions) :: Nil
   }
 
   // TODO: this function is copied in a bunch of places
