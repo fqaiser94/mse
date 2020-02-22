@@ -11,8 +11,9 @@ object SimplifyStructBasedExpressions {
     SimplifySuccessiveRenameFieldsExpressions,
     // drop drop
     SimplifySuccessiveDropFieldsExpressions,
-    // TODO: add rename
-    // TODO: rename add
+    // add rename
+    // rename add
+    SimplifySuccessiveAddFieldsRenameFieldsExpressions,
     // drop rename
     // rename drop
     SimplifySuccessiveRenameFieldsDropFieldsExpressions,

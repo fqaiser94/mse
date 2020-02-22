@@ -116,4 +116,6 @@ class SimplifySuccessiveAddFieldsDropFieldsExpressionsTest extends PlanTest with
       expectedEvaluationResult,
       expectedDataType)
   }
+
+  // TODO: drop multiple fields with the same given name
 }
