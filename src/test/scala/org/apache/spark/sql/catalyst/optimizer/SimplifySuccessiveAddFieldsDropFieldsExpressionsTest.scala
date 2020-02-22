@@ -14,7 +14,7 @@ class SimplifySuccessiveAddFieldsDropFieldsExpressionsTest extends PlanTest with
     val batches: Seq[Optimize.Batch] = Batch(
       this.getClass.getSimpleName,
       FixedPoint(50),
-      SimplifySuccessiveAddFieldDropFieldsExpressions) :: Nil
+      SimplifySuccessiveAddFieldsDropFieldsExpressions) :: Nil
   }
 
   protected def assertEquivalentPlanAndEvaluation(unoptimizedExpression: Expression, expectedExpression: Expression, expectedValue: Any, expectedDataType: DataType): Unit = {

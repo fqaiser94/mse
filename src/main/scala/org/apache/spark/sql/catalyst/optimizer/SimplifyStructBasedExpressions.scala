@@ -18,7 +18,7 @@ object SimplifyStructBasedExpressions {
     SimplifySuccessiveRenameFieldsDropFieldsExpressions,
     // add drop
     // drop add
-    SimplifySuccessiveAddFieldDropFieldsExpressions,
+    SimplifySuccessiveAddFieldsDropFieldsExpressions,
     // add struct
     SimplifySuccessiveAddFieldCreateNamedStructExpressions
     // TODO: rename struct

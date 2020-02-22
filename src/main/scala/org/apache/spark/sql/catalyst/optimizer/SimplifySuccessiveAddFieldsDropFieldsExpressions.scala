@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.StructType
 
-object SimplifySuccessiveAddFieldDropFieldsExpressions extends Rule[LogicalPlan] {
+object SimplifySuccessiveAddFieldsDropFieldsExpressions extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case AddFields(DropFields(structExpr, dropFields@_*), addOrReplaceFieldNames, addOrReplaceFieldExprs) =>
       val existingFields: Seq[(String, Expression)] = structExpr
