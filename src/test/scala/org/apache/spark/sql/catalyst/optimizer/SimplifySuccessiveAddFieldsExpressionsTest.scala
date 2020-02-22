@@ -1,13 +1,11 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{AddFields, Alias, Expression, ExpressionEvalHelper, Literal}
-import org.apache.spark.sql.catalyst.plans.PlanTest
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
+import org.apache.spark.sql.catalyst.expressions.{AddFields, Literal}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
-class SimplifySuccessiveAddFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveAddFieldsExpressionsTest extends OptimizerTest {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
@@ -16,17 +14,7 @@ class SimplifySuccessiveAddFieldsExpressionsTest extends PlanTest with Expressio
       SimplifySuccessiveAddFieldsExpressions) :: Nil
   }
 
-  // TODO: this function is copied in a bunch of places
-  protected def assertEquivalentPlanAndEvaluation(unoptimizedExpression: Expression, expectedExpression: Expression, expectedValue: Any, expectedDataType: DataType): Unit = {
-    val actualPlan = Optimize.execute(Project(Alias(unoptimizedExpression, "out")() :: Nil, OneRowRelation()).analyze)
-    val expectedPlan = Project(Alias(expectedExpression, "out")() :: Nil, OneRowRelation()).analyze
-
-    comparePlans(actualPlan, expectedPlan)
-    checkEvaluation(unoptimizedExpression, expectedValue)
-    checkEvaluation(expectedExpression, expectedValue)
-    assert(unoptimizedExpression.dataType == expectedDataType)
-    assert(expectedExpression.dataType == expectedDataType)
-  }
+  override val Optimizer: RuleExecutor[LogicalPlan] = Optimize
 
   private val inputStruct = {
     val schema = StructType(Seq(

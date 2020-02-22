@@ -1,13 +1,11 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{Alias, DropFields, Expression, ExpressionEvalHelper, Literal}
-import org.apache.spark.sql.catalyst.plans.PlanTest
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
+import org.apache.spark.sql.catalyst.expressions.{DropFields, Literal}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
-class SimplifySuccessiveDropFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveDropFieldsExpressionsTest extends OptimizerTest {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
@@ -16,13 +14,7 @@ class SimplifySuccessiveDropFieldsExpressionsTest extends PlanTest with Expressi
       SimplifySuccessiveDropFieldsExpressions) :: Nil
   }
 
-  protected def assertEquivalentPlanAndEvaluation(e1: Expression, e2: Expression, value: Any): Unit = {
-    val correctAnswer = Project(Alias(e2, "out")() :: Nil, OneRowRelation()).analyze
-    val actual = Optimize.execute(Project(Alias(e1, "out")() :: Nil, OneRowRelation()).analyze)
-    comparePlans(actual, correctAnswer)
-    checkEvaluation(e1, value)
-    checkEvaluation(e2, value)
-  }
+  override val Optimizer: RuleExecutor[LogicalPlan] = Optimize
 
   private val inputStruct = {
     val schema = StructType(Seq(
@@ -40,22 +32,38 @@ class SimplifySuccessiveDropFieldsExpressionsTest extends PlanTest with Expressi
     assertEquivalentPlanAndEvaluation(
       DropFields(DropFields(inputStruct, "b"), "c"),
       DropFields(inputStruct, "b", "c"),
-      create_row(1, 4, 5, 6))
+      create_row(1, 4, 5, 6),
+      StructType(Seq(
+        StructField("a", IntegerType),
+        StructField("d", IntegerType),
+        StructField("e", IntegerType),
+        StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
       DropFields(DropFields(inputStruct, "a", "b"), "c"),
       DropFields(inputStruct, "a", "b", "c"),
-      create_row(4, 5, 6))
+      create_row(4, 5, 6),
+      StructType(Seq(
+        StructField("d", IntegerType),
+        StructField("e", IntegerType),
+        StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
       DropFields(DropFields(inputStruct, "a"), "b", "c"),
       DropFields(inputStruct, "a", "b", "c"),
-      create_row(4, 5, 6))
+      create_row(4, 5, 6),
+      StructType(Seq(
+        StructField("d", IntegerType),
+        StructField("e", IntegerType),
+        StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
       DropFields(DropFields(inputStruct, "a", "b"), "c", "d"),
       DropFields(inputStruct, "a", "b", "c", "d"),
-      create_row(5, 6))
+      create_row(5, 6),
+      StructType(Seq(
+        StructField("e", IntegerType),
+        StructField("f", IntegerType))))
   }
 
   // TODO: test for null struct

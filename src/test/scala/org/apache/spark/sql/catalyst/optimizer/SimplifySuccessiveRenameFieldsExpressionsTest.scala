@@ -1,13 +1,11 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.catalyst.dsl.plans._
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, ExpressionEvalHelper, Literal, RenameFields}
-import org.apache.spark.sql.catalyst.plans.PlanTest
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OneRowRelation, Project}
+import org.apache.spark.sql.catalyst.expressions.{Literal, RenameFields}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
-class SimplifySuccessiveRenameFieldsExpressionsTest extends PlanTest with ExpressionEvalHelper {
+class SimplifySuccessiveRenameFieldsExpressionsTest extends OptimizerTest {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
@@ -16,19 +14,7 @@ class SimplifySuccessiveRenameFieldsExpressionsTest extends PlanTest with Expres
       SimplifySuccessiveRenameFieldsExpressions) :: Nil
   }
 
-  /**
-    * Checks both expressions resolve to an equivalent plan, evaluation, and dataType.
-    */
-  protected def assertEquivalent(unoptimizedExpression: Expression, expectedExpression: Expression, expectedValue: Any, expectedDataType: DataType): Unit = {
-    val actualPlan = Optimize.execute(Project(Alias(unoptimizedExpression, "out")() :: Nil, OneRowRelation()).analyze)
-    val expectedPlan = Project(Alias(expectedExpression, "out")() :: Nil, OneRowRelation()).analyze
-
-    comparePlans(actualPlan, expectedPlan)
-    checkEvaluation(unoptimizedExpression, expectedValue)
-    checkEvaluation(expectedExpression, expectedValue)
-    assert(unoptimizedExpression.dataType == expectedDataType)
-    assert(expectedExpression.dataType == expectedDataType)
-  }
+  override val Optimizer: RuleExecutor[LogicalPlan] = Optimize
 
   private val inputStruct = {
     val schema = StructType(Seq(
@@ -42,7 +28,7 @@ class SimplifySuccessiveRenameFieldsExpressionsTest extends PlanTest with Expres
   test("should simplify successive RenameFields call into a single RenameFields call") {
     val expectedEvaluationResult = create_row(1, 2, 3)
 
-    assertEquivalent(
+    assertEquivalentPlanAndEvaluation(
       RenameFields(RenameFields(inputStruct, "a", "x"), "b", "y"),
       RenameFields(inputStruct, Seq("a", "b"), Seq("x", "y")),
       expectedEvaluationResult,
@@ -51,7 +37,7 @@ class SimplifySuccessiveRenameFieldsExpressionsTest extends PlanTest with Expres
         StructField("y", IntegerType),
         StructField("c", IntegerType))))
 
-    assertEquivalent(
+    assertEquivalentPlanAndEvaluation(
       RenameFields(RenameFields(inputStruct, Seq("a", "b"), Seq("x", "y")), "c", "z"),
       RenameFields(inputStruct, Seq("a", "b", "c"), Seq("x", "y", "z")),
       expectedEvaluationResult,
@@ -60,7 +46,7 @@ class SimplifySuccessiveRenameFieldsExpressionsTest extends PlanTest with Expres
         StructField("y", IntegerType),
         StructField("z", IntegerType))))
 
-    assertEquivalent(
+    assertEquivalentPlanAndEvaluation(
       RenameFields(RenameFields(inputStruct, "a", "x"), Seq("b", "c"), Seq("y", "z")),
       RenameFields(inputStruct, Seq("a", "b", "c"), Seq("x", "y", "z")),
       expectedEvaluationResult,
