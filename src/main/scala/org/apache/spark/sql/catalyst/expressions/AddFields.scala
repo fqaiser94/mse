@@ -5,6 +5,7 @@ import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.expressions.codegen.Block._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode, FalseLiteral}
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.catalyst.Utilities._
 
 /**
   *
@@ -28,31 +29,6 @@ import org.apache.spark.sql.types.{StructField, StructType}
 case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]) extends Expression {
 
   private type FieldName = String
-
-  /**
-    * Recursively loops through addOrReplaceFields, adding or replacing fields by FieldName.
-    */
-  private def loop[V](existingFields: Seq[(FieldName, V)], addOrReplaceFields: Seq[(FieldName, V)]): Seq[(FieldName, V)] = {
-    if (addOrReplaceFields.nonEmpty) {
-      val existingFieldNames = existingFields.map(_._1)
-      val newField@(newFieldName, _) = addOrReplaceFields.head
-
-      if (existingFieldNames.contains(newFieldName)) {
-        loop(
-          existingFields.map {
-            case (fieldName, _) if fieldName == newFieldName => newField
-            case x => x
-          },
-          addOrReplaceFields.drop(1))
-      } else {
-        loop(
-          existingFields :+ newField,
-          addOrReplaceFields.drop(1))
-      }
-    } else {
-      existingFields
-    }
-  }
 
   private lazy val ogStructType: StructType =
     struct.dataType.asInstanceOf[StructType]
