@@ -45,7 +45,7 @@ class dropFieldsTest extends QueryTest with SharedSparkSession with Matchers {
   test("drop all fields in struct") {
     checkAnswer(
       df.withColumn("a", $"a".dropFields("c", "a", "b")),
-      Row(null) :: Nil)
+      Row(Row()) :: Nil)
   }
 
   test("drop multiple fields in struct with multiple dropFields calls") {

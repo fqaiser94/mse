@@ -50,7 +50,7 @@ class SimplifyStructBasedExpressionsTest extends QueryTest with SharedSparkSessi
   test("drop all fields in struct") {
     checkAnswer(
       df.withColumn("a", $"a".dropFields("c", "a", "b")),
-      Row(null) :: Nil)
+      Row(Row()) :: Nil)
   }
 
   // TODO: more tests

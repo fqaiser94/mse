@@ -7,7 +7,6 @@ import org.apache.spark.unsafe.types.UTF8String
 
 class DropFieldsTest extends ExpressionTester {
 
-  // TODO: all tests should verify schema
   // TODO: test for handling attribute reference
 
   val (nonNullStruct, nullStruct, unsafeRowStruct) = {
@@ -15,8 +14,7 @@ class DropFieldsTest extends ExpressionTester {
       StructField("a", IntegerType),
       StructField("b", StringType),
       StructField("c", BooleanType),
-      StructField("c", StringType)
-    ))
+      StructField("c", StringType)))
 
     val fieldTypes = schema.fields.map(_.dataType)
     val fieldValues = Array(1, "hello", true, "world")
@@ -68,7 +66,13 @@ class DropFieldsTest extends ExpressionTester {
   }
 
   test("should return null if struct = null") {
-    checkEvaluation(DropFields(nullStruct, "a"), null)
+    checkEvaluationCustom(
+      DropFields(nullStruct, "a"),
+      null,
+      StructType(Seq(
+        StructField("b", StringType),
+        StructField("c", BooleanType),
+        StructField("c", StringType))))
   }
 
   Seq(
@@ -76,49 +80,77 @@ class DropFieldsTest extends ExpressionTester {
     ("UnsafeRow", unsafeRowStruct)
   ).foreach { case (structName, struct) =>
     test(s"should drop field with given fieldName in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(struct, "a"),
-        create_row("hello", true, "world"))
+        create_row("hello", true, "world"),
+        StructType(Seq(
+          StructField("b", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType))))
 
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(struct, "b"),
-        create_row(1, true, "world"))
+        create_row(1, true, "world"),
+        StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("c", BooleanType),
+          StructField("c", StringType))))
     }
 
     test(s"should drop all fields with given fieldName in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(struct, "c"),
-        create_row(1, "hello"))
+        create_row(1, "hello"),
+        StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("b", StringType))))
     }
 
     test(s"should drop all fields with given fieldNames in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(struct, "a", "b"),
-        create_row(true, "world"))
+        create_row(true, "world"),
+        StructType(Seq(
+          StructField("c", BooleanType),
+          StructField("c", StringType))))
     }
 
-    test(s"should return null if all fields in $structName are dropped") {
-      checkEvaluation(
+    test(s"should return empty struct if all fields in $structName are dropped") {
+      checkEvaluationCustom(
         DropFields(struct, "a", "b", "c"),
-        null)
+        create_row(),
+        StructType(Seq.empty))
     }
 
     test(s"should return original struct if given fieldName does not exist in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(struct, "d"),
-        create_row(1, "hello", true, "world"))
+        create_row(1, "hello", true, "world"),
+        StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("b", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType))))
     }
 
     test(s"should return original struct if given fieldNames do not exist in $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(struct, "d", "e"),
-        create_row(1, "hello", true, "world"))
+        create_row(1, "hello", true, "world"),
+        StructType(Seq(
+          StructField("a", IntegerType),
+          StructField("b", StringType),
+          StructField("c", BooleanType),
+          StructField("c", StringType))))
     }
 
     test(s"should work in a nested fashion on $structName") {
-      checkEvaluation(
+      checkEvaluationCustom(
         DropFields(DropFields(struct, "a"), "b"),
-        create_row(true, "world"))
+        create_row(true, "world"),
+        StructType(Seq(
+          StructField("c", BooleanType),
+          StructField("c", StringType))))
     }
   }
 }
