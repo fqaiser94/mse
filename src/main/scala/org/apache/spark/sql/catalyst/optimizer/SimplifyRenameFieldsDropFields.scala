@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.StructType
 
-object SimplifySuccessiveRenameFieldsDropFieldsExpressions extends Rule[LogicalPlan] {
+object SimplifyRenameFieldsDropFields extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case RenameFields(DropFields(structExpr, dropFields@_*), existingFieldNames, newFieldNames) =>
       toCreateNamedStruct(structExpr, existingFieldNames, newFieldNames, dropFields, Seq.empty)

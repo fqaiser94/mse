@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.catalyst.Utilities._
 
-object SimplifySuccessiveAddFieldsRenameFieldsExpressions extends Rule[LogicalPlan] {
+object SimplifyAddFieldsRenameFields extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case AddFields(RenameFields(structExpr, existingFieldNames, newFieldNames), addOrReplaceFieldNames, addOrReplaceFieldExprs) =>
       val renamedFields: Seq[(String, Expression)] = {

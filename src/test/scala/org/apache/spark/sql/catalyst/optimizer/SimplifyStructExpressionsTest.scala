@@ -6,7 +6,7 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{QueryTest, Row}
 import org.scalatest.Matchers
 
-class SimplifyStructBasedExpressionsTest extends QueryTest with SharedSparkSession with Matchers {
+class SimplifyStructExpressionsTest extends QueryTest with SharedSparkSession with Matchers {
 
   import testImplicits._
 
@@ -21,12 +21,12 @@ class SimplifyStructBasedExpressionsTest extends QueryTest with SharedSparkSessi
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    spark.experimental.extraOptimizations = SimplifyStructBasedExpressions.rules
+    spark.experimental.extraOptimizations = SimplifyStructExpressions.rules
   }
 
   /**
     * dropFields should work same as without optimization in [[com.mse.column.dropFieldsTest]]
-    * this is mostly to check that [[org.apache.spark.sql.catalyst.optimizer.SimplifySuccessiveDropFieldsExpressions]] is working as expected
+    * this is mostly to check that [[org.apache.spark.sql.catalyst.optimizer.SimplifyDropFieldsDropFields]] is working as expected
     */
 
   test("drop field in struct") {

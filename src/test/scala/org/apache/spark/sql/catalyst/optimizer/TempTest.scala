@@ -23,7 +23,7 @@ class TempTest extends QueryTest with SharedSparkSession with Matchers {
   test("add new field to struct") {
     spark.sparkContext.setLogLevel("ERROR")
 
-    def runTest = {
+    def runTest(): Unit = {
       val result = structLevel1.withColumn("a", $"a".dropFields("c").withField("d", lit(4)))
       result.explain
       result.printSchema()
@@ -34,10 +34,10 @@ class TempTest extends QueryTest with SharedSparkSession with Matchers {
         Row(Row(1, 2, 4)) :: Nil)
     }
 
-    runTest
+    runTest()
 
-    spark.experimental.extraOptimizations = Seq(SimplifySuccessiveAddFieldsCreateNamedStructExpressions)
-    runTest
+    spark.experimental.extraOptimizations = Seq(SimplifyAddFieldsCreateNamedStruct)
+    runTest()
   }
 
 }

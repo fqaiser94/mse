@@ -6,13 +6,13 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
-class SimplifySuccessiveRenameFieldsCreateNamedStructExpressionsTest extends OptimizerTest {
+class SimplifyRenameFieldsCreateNamedStructTest extends OptimizerTest {
 
   private object Optimize extends RuleExecutor[LogicalPlan] {
     val batches: Seq[Optimize.Batch] = Batch(
       this.getClass.getSimpleName,
       FixedPoint(50),
-      SimplifySuccessiveRenameFieldsCreateNamedStructExpressions) :: Nil
+      SimplifyRenameFieldsCreateNamedStruct) :: Nil
   }
 
   override val Optimizer: RuleExecutor[LogicalPlan] = Optimize

@@ -4,7 +4,7 @@ import org.apache.spark.sql.catalyst.expressions.{CreateNamedStruct, DropFields,
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 
-object SimplifySuccessiveDropFieldsCreateNamedStructExpressions extends Rule[LogicalPlan] {
+object SimplifyDropFieldsCreateNamedStruct extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
     case DropFields(struct@CreateNamedStruct(_), dropFieldNames@_*) =>
       val existingFields: Seq[(String, Expression)] = struct.nameExprs.zip(struct.valExprs).map { case (nameExpr, valExpr) =>
