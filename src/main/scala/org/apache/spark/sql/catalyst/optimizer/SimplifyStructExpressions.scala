@@ -8,6 +8,8 @@ object SimplifyStructExpressions {
     SimplifyRenameFieldsRenameFields,
     // drop drop
     SimplifyDropFieldsDropFields,
+    // TODO: add to CreateNamedStruct, maybe need this, maybe not
+    // ReplaceAddFields,
     // add struct
     SimplifyAddFieldsCreateNamedStruct,
     // rename struct
