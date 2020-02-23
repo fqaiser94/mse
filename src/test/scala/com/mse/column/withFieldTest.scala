@@ -55,7 +55,7 @@ class withFieldTest extends QueryTest with SharedSparkSession with Matchers {
   test("throw error if null fieldName supplied") {
     intercept[AnalysisException] {
       structLevel1.withColumn("a", $"a".withField(null, lit(2)))
-    }.getMessage should include("fieldName cannot be null")
+    }.getMessage should include("fieldNames cannot contain null")
   }
 
   test("add new field to struct") {
