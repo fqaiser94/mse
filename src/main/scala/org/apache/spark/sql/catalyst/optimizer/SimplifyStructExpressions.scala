@@ -9,7 +9,7 @@ object SimplifyStructExpressions {
     // drop drop
     SimplifyDropFieldsDropFields,
     // TODO: add to CreateNamedStruct, maybe need this, maybe not
-    // ReplaceAddFields,
+     ReplaceAddFields,
     // add struct
     SimplifyAddFieldsCreateNamedStruct,
     // rename struct
