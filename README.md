@@ -185,9 +185,8 @@ structLevel2.withColumn("a", 'a.withField(
 ```
 
 You can also manipulate **deeply** nested StructType columns using the aforementioned patterns 
-but it can be a little annoying to write out the full chain. For this scenario, this library also provides a few helper methods, 
-namely `add_struct_field`, `rename_struct_field`, `drop_struct_fields`. There is also a more general `update_struct` method
-which is useful for when you want to perform 2 or more (add, rename, drop) operations on a struct. You can use these methods as follows: 
+but it can be a little annoying to write out the full chain. For this scenario, this library also provides a helper method, 
+namely `add_struct_field`. You can use this method to add, rename, and drop deeply nested fields as shown below: 
 
 ```scala
 // Generate some example data  
@@ -234,7 +233,7 @@ structLevel3.withColumn("a", add_struct_field("a.a.a", "b", lit(2))).show
 // +-------------+
     
 // rename field in deeply nested struct
-structLevel3.withColumn("a",rename_struct_field("a.a.a", "b", "z")).printSchema
+structLevel3.withColumn("a", add_struct_field("a.a", "a", $"a.a.a".withFieldRenamed("b", "z"))).printSchema
 // root
 //  |-- a: struct (nullable = true)
 //  |    |-- a: struct (nullable = true)
@@ -244,7 +243,7 @@ structLevel3.withColumn("a",rename_struct_field("a.a.a", "b", "z")).printSchema
 //  |    |    |    |-- c: integer (nullable = true)
 
 // drop field in deeply nested struct
-structLevel3.withColumn("a", drop_struct_fields("a.a.a", "b")).show
+structLevel3.withColumn("a", add_struct_field("a.a", "a", $"a.a.a".dropFields("b"))).show
 // +----------+
 // |         a|
 // +----------+
@@ -252,7 +251,7 @@ structLevel3.withColumn("a", drop_struct_fields("a.a.a", "b")).show
 // +----------+
 
 // add, rename, and drop fields in deeply nested struct
-val result = structLevel3.withColumn("a", update_struct("a.a.a", $"a.a.a".dropFields("b").withFieldRenamed("c", "b").withField("c", lit(4))))
+val result = structLevel3.withColumn("a", add_struct_field("a.a", "a", $"a.a.a".dropFields("b").withFieldRenamed("c", "b").withField("c", lit(4))))
 result.show
 // +-------------+
 // |            a|
@@ -391,4 +390,4 @@ Feel free to submit an issue.
 # Upcoming features
 
 1. Publish to Maven Central.  
-2. Add python bindings. 
+2. Publish to pip.
