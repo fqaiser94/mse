@@ -9,11 +9,12 @@ import org.apache.spark.sql.types.StructType
   *
   * Drops one or more StructFields from StructType.
   * Returns null if struct is null.
-  * Returns null if all fields in struct are dropped.
+  * Returns empty struct if all fields in struct are dropped.
   * This is a no-op if schema doesn't contain given field name(s).
+  * If there are multiple fields with one of the fieldNames, they will all be dropped.
   *
   * @param struct     : The struct to drop fields in.
-  * @param fieldNames : The name of the fields to drop.
+  * @param fieldNames : The names of the fields to drop.
   */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
@@ -28,18 +29,18 @@ import org.apache.spark.sql.types.StructType
 case class DropFields(struct: Expression, fieldNames: String*)
   extends UnaryExpression {
 
-  override lazy val dataType: StructType = {
-    StructType(ogStructType.zipWithIndex
-      .collect { case (field, idx) if indicesToKeep.contains(idx) => field })
-  }
   private lazy val ogStructType: StructType =
     struct.dataType.asInstanceOf[StructType]
+
   private lazy val indicesToKeep = {
     ogStructType.fieldNames.zipWithIndex.collect {
       case (fieldName, idx) if !fieldNames.contains(fieldName) => idx
     }
   }
-  private lazy val numFieldsAfterDrop = dataType.fields.length
+
+  override lazy val dataType: StructType = {
+    StructType(ogStructType.zipWithIndex.collect { case (field, idx) if indicesToKeep.contains(idx) => field })
+  }
 
   override def checkInputDataTypes(): TypeCheckResult = {
     // check struct is Struct DataType
@@ -57,25 +58,18 @@ case class DropFields(struct: Expression, fieldNames: String*)
     TypeCheckResult.TypeCheckSuccess
   }
 
-  override def nullable: Boolean = child.nullable | numFieldsAfterDrop == 0
+  override def nullable: Boolean = child.nullable
 
   override def child: Expression = struct
 
   override def eval(input: InternalRow): Any = {
     val structValue = struct.eval(input)
-    if (structValue == null | numFieldsAfterDrop == 0) {
+    if (structValue == null) {
       null
     } else {
-      if (indicesToKeep.isEmpty) {
-        structValue
-      } else {
-        val ogValues = structValue.asInstanceOf[InternalRow].toSeq(ogStructType)
-        val newValues = ogValues
-          .zipWithIndex
-          .collect { case (ogValue, idx) if indicesToKeep.contains(idx) => ogValue }
-
-        InternalRow.fromSeq(newValues)
-      }
+      val ogValues = structValue.asInstanceOf[InternalRow].toSeq(ogStructType)
+      val newValues = ogValues.zipWithIndex.collect { case (ogValue, idx) if indicesToKeep.contains(idx) => ogValue }
+      InternalRow.fromSeq(newValues)
     }
   }
 
@@ -87,44 +81,30 @@ case class DropFields(struct: Expression, fieldNames: String*)
       ctx,
       ev,
       structVar => {
-        if (numFieldsAfterDrop > 0) {
-          if (indicesToKeep.isEmpty) {
-            s"""
-               |${ev.value} = $structVar;
-             """.stripMargin
-          } else {
-            val populateRowValuesVar = ogStructType.fields
-              .zipWithIndex
-              .collect { case (field, idx) if indicesToKeep.contains(idx) => (field, idx) }
-              .zipWithIndex
-              .map { case ((structField, ogIdx), newIdx) =>
-                val nullCheck = s"$structVar.isNullAt($ogIdx)"
-                val nonNullValue =
-                  CodeGenerator.getValue(structVar, structField.dataType, ogIdx.toString)
-
-                s"""
-                   |if ($nullCheck) {
-                   | $rowValuesVar[$newIdx] = null;
-                   |} else {
-                   | $rowValuesVar[$newIdx] = $nonNullValue;
-                   |}""".stripMargin
-              }
-              .mkString("\n|")
+        val populateRowValuesVar = ogStructType.fields
+          .zipWithIndex
+          .collect { case (field, idx) if indicesToKeep.contains(idx) => (field, idx) }
+          .zipWithIndex
+          .map { case ((structField, ogIdx), newIdx) =>
+            val nullCheck = s"$structVar.isNullAt($ogIdx)"
+            val nonNullValue = CodeGenerator.getValue(structVar, structField.dataType, ogIdx.toString)
 
             s"""
-               |Object[] $rowValuesVar = new Object[${dataType.length}];
-               |
-               |$populateRowValuesVar
-               |
-               |${ev.value} = new $rowClass($rowValuesVar);
-            """.stripMargin
+               |if ($nullCheck) {
+               | $rowValuesVar[$newIdx] = null;
+               |} else {
+               | $rowValuesVar[$newIdx] = $nonNullValue;
+               |}""".stripMargin
           }
-        } else {
-          s"""
-             |${ev.isNull} = true;
-             |${ev.value} = null;
-           """.stripMargin
-        }
+          .mkString("\n|")
+
+        s"""
+           |Object[] $rowValuesVar = new Object[${dataType.length}];
+           |
+           |$populateRowValuesVar
+           |
+           |${ev.value} = new $rowClass($rowValuesVar);
+           |""".stripMargin
       })
   }
 

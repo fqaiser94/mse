@@ -7,14 +7,14 @@ import org.apache.spark.sql.types.StructType
 
 /**
   *
-  * Renames StructField in StructType.
+  * Renames StructFields in StructType.
   * Returns null if struct is null.
-  * This is a no-op if schema doesn't contain any field with existingFieldName.
+  * This is a no-op if schema doesn't contain any fields with existingFieldNames.
   * If there are multiple fields with existingFieldName, they will all be renamed.
   *
-  * @param struct            : The struct to rename field in.
-  * @param existingFieldName : The name of the fields to rename.
-  * @param newFieldName      : The name to give the fields you want to rename.
+  * @param struct             : The struct to rename field in.
+  * @param existingFieldNames : The name of the fields to rename.
+  * @param newFieldNames      : The name to give the fields you want to rename.
   */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
@@ -26,16 +26,33 @@ import org.apache.spark.sql.types.StructType
        {"a":1, "c":2}
   """)
 // scalastyle:on line.size.limit
-case class RenameField(struct: Expression, existingFieldName: String, newFieldName: String)
+case class RenameFields(struct: Expression, existingFieldNames: Seq[String], newFieldNames: Seq[String])
   extends UnaryExpression {
 
   override lazy val dataType: StructType = {
-    StructType(struct.dataType.asInstanceOf[StructType].map(field =>
-      if (field.name == existingFieldName) field.copy(name = newFieldName) else field
-    ))
+    val renamedFields = {
+      var fields = struct.dataType.asInstanceOf[StructType].fields
+      existingFieldNames.zip(newFieldNames).foreach { case (existingName, newName) =>
+        fields = fields.map {
+          case field if field.name == existingName => field.copy(name = newName)
+          case field => field
+        }
+      }
+      fields
+    }
+
+    StructType(renamedFields)
   }
 
   override def checkInputDataTypes(): TypeCheckResult = {
+    // check that existingFieldNames contain the same number of elements as newFieldNames
+    val existingFieldNamesLength = existingFieldNames.length
+    val newFieldNamesLength = newFieldNames.length
+    if (existingFieldNamesLength != newFieldNamesLength) {
+      return TypeCheckResult.TypeCheckFailure(
+        s"existingFieldNames should contain same number of elements as newFieldNames. existingFieldNames is of length $existingFieldNamesLength. newFieldNames is of length $newFieldNamesLength.")
+    }
+
     // check struct is Struct DataType
     val typeName = struct.dataType.typeName
     if (typeName != StructType(Nil).typeName) {
@@ -44,12 +61,12 @@ case class RenameField(struct: Expression, existingFieldName: String, newFieldNa
     }
 
     // check existingFieldName is not null
-    if (existingFieldName == null) {
+    if (existingFieldNames.contains(null)) {
       return TypeCheckResult.TypeCheckFailure("existingFieldName cannot be null")
     }
 
     // check newFieldName is not null
-    if (newFieldName == null) {
+    if (newFieldNames.contains(null)) {
       return TypeCheckResult.TypeCheckFailure("newFieldName cannot be null")
     }
 
@@ -68,5 +85,10 @@ case class RenameField(struct: Expression, existingFieldName: String, newFieldNa
     nullSafeCodeGen(ctx, ev, structVar => s"${ev.value} = $structVar;")
   }
 
-  override def prettyName: String = "rename_field"
+  override def prettyName: String = "rename_fields"
+}
+
+object RenameFields {
+  def apply(struct: Expression, existingFieldName: String, newFieldName: String): RenameFields =
+    RenameFields(struct, Seq(existingFieldName), Seq(newFieldName))
 }
