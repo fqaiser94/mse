@@ -1,13 +1,15 @@
 package com.mse.column
 
-import org.apache.spark.sql.Column
+import org.apache.spark.sql.{Column, ColumnName}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions.{AddFields, DropFields, Expression, RenameFields}
 import org.apache.spark.sql.functions._
 
 object methods {
 
-  implicit class CustomColumnMethods(val col: Column) {
+  implicit def symbolToColumnWithCustomMethods(s: Symbol): ColumnWithCustomMethods = ColumnWithCustomMethods(new ColumnName(s.name))
+
+  implicit class ColumnWithCustomMethods(val col: Column) {
 
     private val expr = col.expr
 

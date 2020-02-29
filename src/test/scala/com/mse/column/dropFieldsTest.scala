@@ -41,13 +41,21 @@ trait dropFieldsTests extends QueryTester {
   }
 
   test("drop field in struct") {
+    val expectedValue = Row(Row(1, 3)) :: Nil
+    val expectedSchema = StructType(Seq(
+      StructField("a", StructType(Seq(
+        StructField("a", IntegerType),
+        StructField("c", IntegerType))))))
+
+    checkAnswer(
+      structDf.withColumn("a", 'a.dropFields("b")),
+      expectedValue,
+      expectedSchema)
+
     checkAnswer(
       structDf.withColumn("a", $"a".dropFields("b")),
-      Row(Row(1, 3)) :: Nil,
-      StructType(Seq(
-        StructField("a", StructType(Seq(
-          StructField("a", IntegerType),
-          StructField("c", IntegerType)))))))
+      expectedValue,
+      expectedSchema)
   }
 
   test("drop multiple fields in struct") {

@@ -24,7 +24,7 @@ addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.2.1")
 2. Include this library as a dependency in `build.sbt`: 
 ```scala
 libraryDependencies ++= Seq(
-  "mse" %% "mse" % "0.1.3"
+  "mse" %% "mse" % "0.1.4"
 )
 
 resolvers += Resolver.githubPackagesRepo("fqaiser94", "mse")
@@ -47,7 +47,7 @@ Download the latest jar from [GitHub packages](https://github.com/fqaiser94/mse/
 Start a spark-shell session and include the path to downloaded jar:    
 
 ```bash
-spark-shell --jars mse_2.11-0.1.3.jar
+spark-shell --jars mse_2.11-0.1.4.jar
 ``` 
 
 # Usage 
@@ -88,7 +88,7 @@ structLevel1.printSchema
 //  |    |-- c: integer (nullable = true)
 
 // add new field to top level struct
-structLevel1.withColumn("a", $"a".withField("d", lit(4))).show
+structLevel1.withColumn("a", 'a.withField("d", lit(4))).show
 // +----------+
 // |         a|
 // +----------+
@@ -96,7 +96,7 @@ structLevel1.withColumn("a", $"a".withField("d", lit(4))).show
 // +----------+
 
 // replace field in top level struct
-structLevel1.withColumn("a", $"a".withField("b", lit(2))).show
+structLevel1.withColumn("a", 'a.withField("b", lit(2))).show
 // +---------+
 // |        a|
 // +---------+
@@ -104,7 +104,7 @@ structLevel1.withColumn("a", $"a".withField("b", lit(2))).show
 // +---------+
 
 // rename field in top level struct
-structLevel1.withColumn("a", $"a".withFieldRenamed("b", "z")).printSchema
+structLevel1.withColumn("a", 'a.withFieldRenamed("b", "z")).printSchema
 // root
 //  |-- a: struct (nullable = true)
 //  |    |-- a: integer (nullable = true)
@@ -112,7 +112,7 @@ structLevel1.withColumn("a", $"a".withFieldRenamed("b", "z")).printSchema
 //  |    |-- c: integer (nullable = true)
 
 // drop field in top level struct
-structLevel1.withColumn("a", $"a".dropFields("b")).show
+structLevel1.withColumn("a", 'a.dropFields("b")).show
 // +------+
 // |     a|
 // +------+
@@ -148,7 +148,7 @@ structLevel2.printSchema
 // |    |    |-- c: integer (nullable = true)
 
 // add new field to nested struct
-structLevel2.withColumn("a", $"a".withField(
+structLevel2.withColumn("a", 'a.withField(
   "a", $"a.a".withField("d", lit(4)))).show
 // +------------+
 // |           a|
@@ -166,7 +166,7 @@ structLevel2.withColumn("a", $"a".withField(
 // +-----------+
     
 // rename field in nested struct
-structLevel2.withColumn("a", $"a".withField(
+structLevel2.withColumn("a", 'a.withField(
   "a", $"a.a".withFieldRenamed("b", "z"))).printSchema
 // |-- a: struct (nullable = true)
 // |    |-- a: struct (nullable = true)
@@ -175,7 +175,7 @@ structLevel2.withColumn("a", $"a".withField(
 // |    |    |-- c: integer (nullable = true)
     
 // drop field in nested struct
-structLevel2.withColumn("a", $"a".withField(
+structLevel2.withColumn("a", 'a.withField(
   "a", $"a.a".dropFields("b"))).show
 // +--------+
 // |       a|
@@ -274,7 +274,7 @@ Another common use-case is to perform these operations on arrays of structs.
 To do this using the Scala APIs, we recommend combining the functions in this library with the functions provided in [spark-hofs](https://github.com/AbsaOSS/spark-hofs/):
 
 ```bash
-spark-shell --jars mse_2.11-0.1.jar --packages "za.co.absa:spark-hofs_2.11:0.4.0"
+spark-shell --jars mse_2.11-0.1.4.jar --packages "za.co.absa:spark-hofs_2.11:0.4.0"
 ```   
 
 ```scala
@@ -356,7 +356,7 @@ Spark will use these optimization rules to internally rewrite queries in a more 
 For example, consider the following query and its corresponding physical plan: 
 
 ```scala
-val query = structLevel1.withColumn("a", $"a".withField("d", lit(4)).withField("e", lit(5)))
+val query = structLevel1.withColumn("a", 'a.withField("d", lit(4)).withField("e", lit(5)))
 
 query.explain
 // == Physical Plan ==
@@ -391,5 +391,4 @@ Feel free to submit an issue.
 # Upcoming features
 
 1. Publish to Maven Central.  
-2. Currently, we have to use one of `$"colName"` or `col("colName")` pattern to access the implicit methods. Should also be able to use `'colName` pattern.
-3. Add python bindings. 
+2. Add python bindings. 

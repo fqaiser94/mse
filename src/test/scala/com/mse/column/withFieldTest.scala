@@ -79,10 +79,18 @@ trait withFieldTests extends QueryTester {
   }
 
   test("add new field to struct") {
+    val expectedValue = Row(Row(1, 1, 1, 2)) :: Nil
+    val expectedSchema = StructType(Seq(StructField("a", structLevel1WithNewFieldSchema)))
+
+    checkAnswer(
+      structLevel1.withColumn("a", 'a.withField("d", lit(2))),
+      expectedValue,
+      expectedSchema)
+
     checkAnswer(
       structLevel1.withColumn("a", $"a".withField("d", lit(2))),
-      Row(Row(1, 1, 1, 2)) :: Nil,
-      StructType(Seq(StructField("a", structLevel1WithNewFieldSchema))))
+      expectedValue,
+      expectedSchema)
   }
 
   test("add multiple new fields to struct") {

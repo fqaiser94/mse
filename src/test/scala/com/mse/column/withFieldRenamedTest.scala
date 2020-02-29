@@ -45,15 +45,23 @@ trait withFieldRenamedTests extends QueryTester {
   }
 
   test("rename field in struct") {
+    val expectedValue = Row(Row(1, 2, 3, 4)) :: Nil
+    val expectedSchema = StructType(Seq(
+      StructField("a", StructType(Seq(
+        StructField("a", IntegerType),
+        StructField("y", IntegerType),
+        StructField("c", IntegerType),
+        StructField("c", IntegerType))))))
+
+    checkAnswer(
+      structDf.withColumn("a", 'a.withFieldRenamed("b", "y")),
+      expectedValue,
+      expectedSchema)
+
     checkAnswer(
       structDf.withColumn("a", $"a".withFieldRenamed("b", "y")),
-      Row(Row(1, 2, 3, 4)) :: Nil,
-      StructType(Seq(
-        StructField("a", StructType(Seq(
-          StructField("a", IntegerType),
-          StructField("y", IntegerType),
-          StructField("c", IntegerType),
-          StructField("c", IntegerType)))))))
+      expectedValue,
+      expectedSchema)
   }
 
   test("rename multiple fields in struct") {
