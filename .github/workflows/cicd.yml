@@ -5,10 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      #      - name: sbt test
-      #        uses: lokkju/github-action-sbt@v0.2.2
-      #        with:
-      #          commands: + test
+      - name: sbt test
+        uses: lokkju/github-action-sbt@v0.2.2
+        with:
+          commands: + test
       - name: sbt package
         uses: lokkju/github-action-sbt@v0.2.2
         with:
@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: '3.6'
-      - name: Install dependencies
+      - name: install python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pyspark
@@ -25,15 +25,15 @@ jobs:
         run: |
           cd python
           sh run-tests.sh
-#  deploy:
-#    if: contains(github.ref, 'master')
-#    needs: test
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v1
-#      - name: sbt deploy
-#        uses: lokkju/github-action-sbt@v0.2.2
-#        with:
-#          commands: + publish
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  deploy:
+    if: contains(github.ref, 'master')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: sbt deploy
+        uses: lokkju/github-action-sbt@v0.2.2
+        with:
+          commands: + publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
