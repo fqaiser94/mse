@@ -5,19 +5,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: sbt test
+      #      - name: sbt test
+      #        uses: lokkju/github-action-sbt@v0.2.2
+      #        with:
+      #          commands: + test
+      - name: sbt package
         uses: lokkju/github-action-sbt@v0.2.2
         with:
-          commands: + test
-  deploy:
-    if: contains(github.ref, 'master')
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: sbt deploy
-        uses: lokkju/github-action-sbt@v0.2.2
+          commands: + package
+      - name: set up python3
+        uses: actions/setup-python@v1
         with:
-          commands: + publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          python-version: '3.x'
+      - name: run python tests
+        run: |
+          sh python/run-tests.sh
+#  deploy:
+#    if: contains(github.ref, 'master')
+#    needs: test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v1
+#      - name: sbt deploy
+#        uses: lokkju/github-action-sbt@v0.2.2
+#        with:
+#          commands: + publish
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
