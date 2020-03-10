@@ -2,3 +2,5 @@
 .idea/
 project/target
 target/
+/python/venv/
+/mse.iml
