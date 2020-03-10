@@ -491,9 +491,6 @@ class MethodsTests(ReusedSQLTestCase):
                                     StructField("b", IntegerType()),
                                     StructField("c", IntegerType())]))]))]))]))
 
-    def test_fail(self):
-        self.assertEqual(1, 2)
-
 
 if __name__ == "__main__":
     import unittest
