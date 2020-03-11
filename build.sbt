@@ -20,5 +20,6 @@ parallelExecution in Test := false
 inThisBuild(List(
   organization := "com.github.fqaiser94",
   homepage := Some(url("https://github.com/fqaiser94/mse")),
-  licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
+  licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html")),
+  developers := List(Developer("fqaiser94", "fqaiser94", "", url("https://github.com/fqaiser94")))
 ))
