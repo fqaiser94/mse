@@ -1,1 +1,1 @@
-addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.2.1")
+addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.0")

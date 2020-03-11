@@ -1,4 +1,4 @@
-package com.mse.column
+package com.github.fqaiser94.mse
 
 import org.apache.spark.sql.{Column, ColumnName}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute

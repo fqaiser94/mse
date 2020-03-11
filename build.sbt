@@ -1,7 +1,5 @@
 name := "mse"
 
-version := "0.1.5"
-
 scalaVersion := "2.12.10"
 
 crossScalaVersions := Seq("2.11.12", "2.12.10")
@@ -17,11 +15,10 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test
 )
 
-licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
-
 parallelExecution in Test := false
 
-ThisBuild / githubOwner := "fqaiser94"
-ThisBuild / githubRepository := "mse"
-ThisBuild / githubUser := sys.env.getOrElse("GITHUB_USER", "")
-ThisBuild / githubTokenSource := Some(TokenSource.Environment("GITHUB_TOKEN"))
+inThisBuild(List(
+  organization := "com.github.fqaiser94",
+  homepage := Some(url("https://github.com/fqaiser94/mse")),
+  licenses := Seq("Apache License 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
+))

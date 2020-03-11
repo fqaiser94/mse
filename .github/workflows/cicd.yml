@@ -13,6 +13,9 @@ jobs:
         uses: lokkju/github-action-sbt@v0.2.2
         with:
           commands: + package
+      - name: copy and rename package for python tests
+        run: |
+          cp target/scala_2.11/*.jar mse.jar
       - name: set up python3
         uses: actions/setup-python@v1
         with:
@@ -26,14 +29,17 @@ jobs:
           cd python
           sh run-tests.sh
   deploy:
-    if: contains(github.ref, 'master')
+    #    if: contains(github.ref, 'master')
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: sbt deploy
-        uses: lokkju/github-action-sbt@v0.2.2
-        with:
-          commands: + publish
+      - uses: olafurpg/setup-scala@v2
+      - uses: olafurpg/setup-gpg@v2
+      - name: Publish
+        run: csbt ci-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
