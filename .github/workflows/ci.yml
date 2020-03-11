@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI
 on: [push]
 jobs:
   test:
@@ -28,18 +28,3 @@ jobs:
         run: |
           cd python
           sh run-tests.sh
-  deploy:
-    if: contains(github.ref, 'master')
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: olafurpg/setup-scala@v2
-      - uses: olafurpg/setup-gpg@v2
-      - name: publish to sonatype
-        run: csbt ci-release
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
