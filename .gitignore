@@ -4,3 +4,4 @@ project/target
 target/
 /python/venv/
 /mse.iml
+/python/mse.jar

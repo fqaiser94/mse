@@ -1,6 +1,6 @@
-package com.mse.column
+package com.github.fqaiser94.mse
 
-import com.mse.column.methods._
+import methods._
 import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
 import org.apache.spark.sql.execution.command.ExplainCommand
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}

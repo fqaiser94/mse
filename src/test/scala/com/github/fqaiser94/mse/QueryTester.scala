@@ -1,4 +1,4 @@
-package com.mse.column
+package com.github.fqaiser94.mse
 
 import org.apache.spark.sql.test.SharedSparkSession
 import org.apache.spark.sql.types.StructType

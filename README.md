@@ -55,7 +55,7 @@ spark-shell --jars mse_2.11-0.1.4.jar
 To bring in to scope the (implicit) Column methods, use:   
 
 ```scala
-import com.mse.column.methods._
+import com.github.fqaiser94.mse.methods._
 ```
 
 You can now use these methods to manipulate fields in a top-level StructType column: 
@@ -279,8 +279,8 @@ spark-shell --jars mse_2.11-0.1.4.jar --packages "za.co.absa:spark-hofs_2.11:0.4
 ```scala
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
-import com.mse.column.methods._
 import za.co.absa.spark.hofs._
+import com.github.fqaiser94.mse.methods._
 
 // Generate some example data
 val arrayOfStructs = spark.createDataFrame(sc.parallelize(
