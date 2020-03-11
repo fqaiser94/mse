@@ -15,7 +15,7 @@ jobs:
           commands: + package
       - name: copy and rename package for python tests
         run: |
-          cp target/scala-2.11/*.jar mse.jar
+          cp target/scala-2.11/*.jar python/mse.jar
       - name: set up python3
         uses: actions/setup-python@v1
         with:
