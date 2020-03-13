@@ -1,54 +1,35 @@
+![Tests Passing](https://github.com/fqaiser94/mse/workflows/CI/badge.svg)
+![Build Status](https://github.com/fqaiser94/mse/workflows/CD/badge.svg)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.fqaiser94/mse_2.11)](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fqaiser94/mse/blob/master/LICENSE)
+
 # Make Structs Easy (MSE)
 
-This library adds `withField`, `withFieldRenamed`, and `dropFields` (implicit) methods to the Column class to enable easy StructType column manipulation. 
-The signature and behaviour of these methods is meant to be similar to their Dataset equivalents, namely the `withColumn`, `withColumnRenamed`, and `drop` methods.
-The methods themselves have been implemented using Catalyst Expressions and so should provide good performance (and certainly better than UDFs). 
+This library adds `withField`, `withFieldRenamed`, and `dropFields` methods to the Column class allowing users to easily add, rename, and drop fields inside StructType columns. 
+The signature and behaviour of these methods is intended to be similar to their Dataset equivalents, namely the `withColumn`, `withColumnRenamed`, and `drop` methods.
 
-This library is currently a work-in-progress and may experience breaking changes between different versions. Version 1.0 is targeted to be the first stable release. 
+The methods themselves are backed by efficient Catalyst Expressions and as a result, should provide better performance than equivalent UDFs. 
+While this library uses Scala's implicit conversion technique to "monkey patch" the methods on to the Column class, 
+there is an on-going effort to add these methods natively to the Column class in the Apache Spark SQL project. 
+You can follow the progress of this initiative in [SPARK-22231](https://issues.apache.org/jira/browse/SPARK-22231).
+
+If you find this project useful, please give it a star!
 
 # Supported Spark versions
 MSE should work without any further requirements on Spark 2.4.x. 
+The library is available for both scala versions 2.11 and 2.12.
 
 # Installation
 
-## SBT Project
+Stable releases of MSE are published to Maven Central. 
+As such, you can pull in the current stable release by simply adding a library dependency to your project for the correct version.
+For example, for an SBT project, simply add the following line to your `build.sbt`:
 
-To include this library in an SBT project, you can use the [sbt-github-packages plugin](https://github.com/djspiewak/sbt-github-packages). 
-See the link for up-to-date instructions but basically, you need to:  
-
-1. Include the plugin in `project/plugins.sbt`: 
-```scala
-addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.2.1")
+```
+libraryDependencies += "com.github.fqaiser94" %% "mse" % "0.2.2"
 ```
 
-2. Include this library as a dependency in `build.sbt`: 
-```scala
-libraryDependencies ++= Seq(
-  "mse" %% "mse" % "0.1.4"
-)
-
-resolvers += Resolver.githubPackagesRepo("fqaiser94", "mse")
-
-credentials += Credentials(
-  "GitHub Package Registry",
-  "maven.pkg.github.com",
-  // THIS IS NOT SECURE, BE CAREFUL!
-  "GITHUB_USERNAME", 
-  "GITHUB_ACCESS_TOKEN")
-```
-
-## Other Projects (e.g. Maven, Gradle)
-
-See [GitHub docs](https://help.github.com/en/github/managing-packages-with-github-packages/using-github-packages-with-your-projects-ecosystem) for details. 
-
-## spark-shell or spark-submit
-
-Download the latest jar from [GitHub packages](https://github.com/fqaiser94/mse/packages). Make sure you choose the correct Scala version for your needs.
-Start a spark-shell session and include the path to downloaded jar:    
-
-```bash
-spark-shell --jars mse_2.11-0.1.4.jar
-``` 
+For other types of projects (e.g. Maven, Gradle), see the installation instructions at this [link](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11). 
 
 # Usage 
 
@@ -272,10 +253,6 @@ result.printSchema
 Another common use-case is to perform these operations on arrays of structs. 
 To do this using the Scala APIs, we recommend combining the functions in this library with the functions provided in [spark-hofs](https://github.com/AbsaOSS/spark-hofs/):
 
-```bash
-spark-shell --jars mse_2.11-0.1.4.jar --packages "za.co.absa:spark-hofs_2.11:0.4.0"
-```   
-
 ```scala
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
@@ -343,8 +320,8 @@ arrayOfStructs.withColumn("array", transform($"array", elem => elem.dropFields("
 
 # Catalyst Optimization Rules
 
-We also provide some Catalyst optimization rules that can be plugged into a Spark session to get better performance. 
-This is simple as including the following two lines of code at the start of your script:  
+We also provide some Catalyst optimization rules that can be plugged into a Spark session to get even better performance. 
+This is as simple as including the following two lines of code at the start of your script:  
 
 ```scala
 import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
@@ -380,14 +357,10 @@ query.explain
 ```
 
 As you can see, the successive `add_fields` method calls have been collapsed into a single `add_fields` method call.  
+
 Theoretically, this should improve performance but for the most part, you won't notice much difference unless you're doing some particularly intense struct manipulation and/or working with a particularly large dataset.  
 
 
 # Questions/Thoughts/Concerns?
 
 Feel free to submit an issue. 
-
-# Upcoming features
-
-1. Publish to Maven Central.  
-2. Publish to pip.
