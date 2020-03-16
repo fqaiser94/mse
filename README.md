@@ -11,7 +11,7 @@ The signature and behaviour of these methods is intended to be similar to their 
 The methods themselves are backed by efficient Catalyst Expressions and as a result, should provide better performance than equivalent UDFs. 
 While this library uses Scala's implicit conversion technique to "monkey patch" the methods on to the Column class, 
 there is an on-going effort to add these methods natively to the Column class in the Apache Spark SQL project. 
-You can follow the progress of this initiative in [SPARK-22231](https://issues.apache.org/jira/browse/SPARK-22231).
+You can follow along with the progress of this initiative in [SPARK-22231](https://issues.apache.org/jira/browse/SPARK-22231).
 
 If you find this project useful, please consider supporting it by giving a star!
 
