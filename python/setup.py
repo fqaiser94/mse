@@ -3,7 +3,7 @@ import setuptools
 setuptools.setup(
     name='mse',
     packages=['mse'],
-    version='0.1.1',
+    version='0.1.2',
     license='Apache license 2.0',
     description='Make Structs Easy',
     author='fqaiser94',
