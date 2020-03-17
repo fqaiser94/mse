@@ -15,18 +15,18 @@ The library is available for Python 3.x.
 
 # Installation
 
-
 Stable releases of MSE are published to PyPi.
-You will also need to provide your PySpark application/s with the `driver-class-path` to the MSE jar which you can get from [here](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11).  
+You will also need to provide your PySpark application/s with the path to the MSE jar which you can get from [here](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11).  
 For example: 
+
 ```bash
-pip3 install mse
+pip install mse
 curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.2/mse_2.11-0.2.2.jar --output mse.jar
-pyspark --driver-class-path mse.jar
+pyspark --jars mse.jar
 ```
 
-If you get errors like `TypeError: 'JavaPackage' object is not callable`, it usually indicates that you haven't 
-provided the correct `driver-class-path` to PySpark.   
+If you get errors like `TypeError: 'JavaPackage' object is not callable`, this usually indicates that you haven't 
+provided PySpark with the correct path to the MSE jar.
 
 # Usage 
 To bring in to scope the (implicit) Column methods in Python, use:
@@ -41,6 +41,7 @@ You can now use these methods to manipulate fields in a StructType column:
 from pyspark.sql import *
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
+from mse import *
 
 # Generate some example data
 structLevel1 = spark.createDataFrame(

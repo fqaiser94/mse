@@ -8,7 +8,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setuptools.setup(
     name='mse',
     packages=['mse'],
-    version='0.1.2',
+    version='0.1.3',
     license='Apache license 2.0',
     description='Make Structs Easy (MSE)',
     long_description=long_description,
@@ -19,7 +19,7 @@ setuptools.setup(
     keywords=['pyspark', 'struct', 'StructType', 'add', 'drop', 'rename'],
     install_requires=['pyspark>=2.4'],
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: Apache Software License',
