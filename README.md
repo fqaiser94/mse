@@ -1,6 +1,7 @@
 ![Tests Passing](https://github.com/fqaiser94/mse/workflows/CI/badge.svg)
 ![Build Status](https://github.com/fqaiser94/mse/workflows/CD/badge.svg)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.fqaiser94/mse_2.11)](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/mse.svg)](https://pypi.python.org/pypi/mse/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fqaiser94/mse/blob/master/LICENSE)
 
 # Make Structs Easy (MSE)
