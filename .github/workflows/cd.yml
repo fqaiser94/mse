@@ -1,8 +1,5 @@
 name: CD
-on:
-  push:
-    branches: [master]
-    tags: ["*"]
+on: release
 jobs:
   deploy:
     runs-on: ubuntu-latest
