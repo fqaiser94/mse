@@ -39,8 +39,7 @@ For other types of projects (e.g. Maven, Gradle), see the installation instructi
 ## Python
 
 Stable releases of MSE are published to PyPi.
-You will also need to provide your PySpark application/s with the path to the MSE jar which you can get from [here](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11).  
-For example: 
+You will also need to provide your PySpark application/s with the path to the MSE jar which you can get from [here](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11). For example: 
 
 ```bash
 pip install mse
@@ -348,8 +347,7 @@ arrayOfStructs.withColumn("array", transform($"array", elem => elem.dropFields("
 
 # Catalyst Optimization Rules
 
-We also provide some Catalyst optimization rules that can be plugged into a Spark session to get even better performance. 
-This is as simple as including the following two lines of code at the start of your script:  
+We also provide some Catalyst optimization rules that can be plugged into a Spark session to get even better performance. This is as simple as including the following two lines of code at the start of your Scala Spark program:  
 
 ```scala
 import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
@@ -388,6 +386,7 @@ As you can see, the successive `add_fields` method calls have been collapsed int
 
 Theoretically, this should improve performance but for the most part, you won't notice much difference unless you're doing some particularly intense struct manipulation and/or working with a particularly large dataset.  
 
+Unfortunately, to the best of our knowledge, there is currently no way to plug in custom Catalyst optimization rules using the Python APIs. 
 
 # Questions/Thoughts/Concerns?
 
@@ -395,5 +394,5 @@ Feel free to submit an issue.
 
 # Instructions for deploying a new release
 
-Increment version number in `python/setup.py`
-Create a new release with appropriately incremented tag. 
+Increment version number in `python/setup.py`  
+Create a new release with appropriately incremented tag
