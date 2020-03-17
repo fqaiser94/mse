@@ -17,3 +17,21 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      - name: set up python3
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.6'
+      - name: install python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade setuptools wheel twine
+      - name: build python package
+        run: |
+          cd python
+          python3 setup.py sdist bdist_wheel
+      - name: publish package to pypi
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_PASSWORD }}
+          packages_dir: python/dist/

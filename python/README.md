@@ -1,21 +1,49 @@
-# Usage
+This library adds `withField`, `withFieldRenamed`, and `dropFields` methods to the Column class allowing users to easily add, rename, and drop fields inside StructType columns. 
+The signature and behaviour of these methods is intended to be similar to their Dataset equivalents, namely the `withColumn`, `withColumnRenamed`, and `drop` methods.
 
-The python library is a work-in-progress. 
-We are actively working developing a proper module and easy pip installation instructions.
-For now, you can try following the example below to access the MSE methods. 
+The methods themselves are backed by efficient Catalyst Expressions and as a result, should provide better performance than equivalent UDFs. 
+While this library "monkey patches" the methods on to the Column class, 
+there is an on-going effort to add these methods natively to the Column class in the Apache Spark SQL project. 
+You can follow along with the progress of this initiative in [SPARK-22231](https://issues.apache.org/jira/browse/SPARK-22231).
+
+If you find this project useful, please consider supporting it by giving a star!
+
+# Supported Spark versions
+
+MSE should work without any further requirements on Spark/PySpark 2.4.x. 
+The library is available for Python 3.x.
+
+# Installation
+
+Stable releases of MSE are published to PyPi.
+You will also need to provide your PySpark application/s with the path to the MSE jar which you can get from [here](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11).  
+For example: 
 
 ```bash
-pyspark --driver-class-path ./target/scala-2.11/mse_2.11-0.1.5.jar
+pip install mse
+curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.2/mse_2.11-0.2.2.jar --output mse.jar
+pyspark --jars mse.jar
 ```
 
-```python
-sc.addPyFile("mse/methods.py")
+If you get errors like `TypeError: 'JavaPackage' object is not callable`, this usually indicates that you haven't 
+provided PySpark with the correct path to the MSE jar.
 
+# Usage 
+To bring in to scope the (implicit) Column methods in Python, use:
+
+```python3
+from mse import *
+```
+
+You can now use these methods to manipulate fields in a StructType column: 
+
+```python3
 from pyspark.sql import *
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
-from mse.methods import *
+from mse import *
 
+# Generate some example data
 structLevel1 = spark.createDataFrame(
   sc.parallelize([Row(Row(1, None, 3))]),
   StructType([
@@ -23,10 +51,52 @@ structLevel1 = spark.createDataFrame(
       StructField("a", IntegerType()),
       StructField("b", IntegerType()),
       StructField("c", IntegerType())]))])).cache()
+      
+structLevel1.show()
+# +-------+                                                                       
+# |      a|
+# +-------+
+# |[1,, 3]|
+# +-------+
 
-structLevel1.withColumn("a", col("a").withField("d", lit(100))).show()
-structLevel1.withColumn("a", col("a").withFieldRenamed("a", "z")).printSchema()
-structLevel1.withColumn("a", col("a").dropFields("c", "b")).show()
+structLevel1.printSchema()
+#  root
+#   |-- a: struct (nullable = true)
+#   |    |-- a: integer (nullable = true)
+#   |    |-- b: integer (nullable = true)
+#   |    |-- c: integer (nullable = true)
 
-structLevel1.withColumn("a", add_struct_field("a", "d", lit(12345))).show()
+#  add new field to top level struct
+structLevel1.withColumn("a", col("a").withField("d", lit(4))).show()
+#  +----------+
+#  |         a|
+#  +----------+
+#  |[1,, 3, 4]|
+#  +----------+
+
+#  replace field in top level struct
+structLevel1.withColumn("a", col("a").withField("b", lit(2))).show()
+#  +---------+
+#  |        a|
+#  +---------+
+#  |[1, 2, 3]|
+#  +---------+
+
+#  rename field in top level struct
+structLevel1.withColumn("a", col("a").withFieldRenamed("b", "z")).printSchema()
+#  root
+#   |-- a: struct (nullable = true)
+#   |    |-- a: integer (nullable = true)
+#   |    |-- z: integer (nullable = true)
+#   |    |-- c: integer (nullable = true)
+
+#  drop field in top level struct
+structLevel1.withColumn("a", col("a").dropFields("b")).show()
+#  +------+
+#  |     a|
+#  +------+
+#  |[1, 3]|
+#  +------+
 ```
+
+For more complicated examples, see the GitHub page. 

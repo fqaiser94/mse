@@ -5,3 +5,6 @@ target/
 /python/venv/
 /mse.iml
 /python/mse.jar
+/python/dist/
+/python/build/lib/mse/
+/python/mse.egg-info/

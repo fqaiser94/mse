@@ -5,21 +5,25 @@
 
 # Make Structs Easy (MSE)
 
-This library adds `withField`, `withFieldRenamed`, and `dropFields` methods to the Column class allowing users to easily add, rename, and drop fields inside StructType columns. 
+This library adds `withField`, `withFieldRenamed`, and `dropFields` methods to the Column class allowing users to easily add, rename, and drop fields inside of StructType columns. 
 The signature and behaviour of these methods is intended to be similar to their Dataset equivalents, namely the `withColumn`, `withColumnRenamed`, and `drop` methods.
 
 The methods themselves are backed by efficient Catalyst Expressions and as a result, should provide better performance than equivalent UDFs. 
 While this library uses Scala's implicit conversion technique to "monkey patch" the methods on to the Column class, 
 there is an on-going effort to add these methods natively to the Column class in the Apache Spark SQL project. 
-You can follow the progress of this initiative in [SPARK-22231](https://issues.apache.org/jira/browse/SPARK-22231).
+You can follow along with the progress of this initiative in [SPARK-22231](https://issues.apache.org/jira/browse/SPARK-22231).
 
-If you find this project useful, please give it a star!
+If you find this project useful, please consider supporting it by giving a star!
 
 # Supported Spark versions
-MSE should work without any further requirements on Spark 2.4.x. 
-The library is available for both scala versions 2.11 and 2.12.
+
+MSE should work without any further requirements on Spark/PySpark 2.4.x. 
+The library is available for both Scala versions 2.11 and 2.12.
+The library is available for Python 3.x.
 
 # Installation
+
+## Scala
 
 Stable releases of MSE are published to Maven Central. 
 As such, you can pull in the current stable release by simply adding a library dependency to your project for the correct version.
@@ -31,13 +35,36 @@ libraryDependencies += "com.github.fqaiser94" %% "mse" % "0.2.2"
 
 For other types of projects (e.g. Maven, Gradle), see the installation instructions at this [link](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11). 
 
+## Python
+
+Stable releases of MSE are published to PyPi.
+You will also need to provide your PySpark application/s with the path to the MSE jar which you can get from [here](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11).  
+For example: 
+
+```bash
+pip install mse
+curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.2/mse_2.11-0.2.2.jar --output mse.jar
+pyspark --jars mse.jar
+```
+
+If you get errors like `TypeError: 'JavaPackage' object is not callable`, this usually indicates that you haven't 
+provided PySpark with the correct path to the MSE jar.   
+
 # Usage 
 
-To bring in to scope the (implicit) Column methods, use:   
+To bring in to scope the (implicit) Column methods in Scala, use:   
 
 ```scala
 import com.github.fqaiser94.mse.methods._
 ```
+
+To bring in to scope the (implicit) Column methods in Python, use:
+
+```python
+from mse import *
+```
+
+The rest of the example code shown below is written in Scala although equivalent Python code would look very similar.  
 
 You can now use these methods to manipulate fields in a top-level StructType column: 
 
@@ -364,3 +391,8 @@ Theoretically, this should improve performance but for the most part, you won't 
 # Questions/Thoughts/Concerns?
 
 Feel free to submit an issue. 
+
+# Instructions for deploying a new release
+
+Increment version number in `python/setup.py`
+Create a new release with appropriately incremented tag. 
