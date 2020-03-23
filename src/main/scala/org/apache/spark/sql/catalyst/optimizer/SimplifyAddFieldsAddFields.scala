@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 
 object SimplifyAddFieldsAddFields extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
-    case AddFields(AddFields(struct, namesA, expressionsA), namesB, expressionsB) =>
-      AddFields(struct, namesA ++ namesB, expressionsA ++ expressionsB)
+    case AddFields(AddFields(exprsA) :: exprsB) =>
+      AddFields(exprsA ++ exprsB)
   }
 }

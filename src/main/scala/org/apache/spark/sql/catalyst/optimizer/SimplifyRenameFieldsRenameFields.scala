@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 
 object SimplifyRenameFieldsRenameFields extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformExpressions {
-    case RenameFields(RenameFields(struct, existingA, newA), existingB, newB) =>
-      RenameFields(struct, existingA ++ existingB, newA ++ newB)
+    case RenameFields(RenameFields(exprsA) :: exprsB) =>
+      RenameFields(exprsA ++ exprsB)
   }
 }

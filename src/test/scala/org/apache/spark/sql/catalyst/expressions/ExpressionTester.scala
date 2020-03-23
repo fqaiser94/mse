@@ -47,6 +47,6 @@ trait ExpressionTester extends SparkFunSuite with ExpressionEvalHelper {
     unsafeRow
   }
 
-  def createArray(values: Any*): ArrayData = new GenericArrayData(values.toArray)
+  def create_array(values: Any*): ArrayData = new GenericArrayData(values.toArray)
 
 }

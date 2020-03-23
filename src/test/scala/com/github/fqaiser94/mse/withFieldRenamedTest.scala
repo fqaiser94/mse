@@ -29,19 +29,19 @@ trait withFieldRenamedTests extends QueryTester {
   test("throw error if withField is called on a column that is not struct dataType") {
     intercept[AnalysisException] {
       testData.withColumn("key", $"key".withFieldRenamed("a", "z"))
-    }.getMessage should include("struct should be struct data type. struct is integer")
+    }.getMessage should include("Only struct is allowed to appear at first position, got: integer.")
   }
 
   test("throw error if null existingFieldName supplied") {
     intercept[AnalysisException] {
       structDf.withColumn("a", $"a".withFieldRenamed(null, "z"))
-    }.getMessage should include("existingFieldName cannot be null")
+    }.getMessage should include("Only non-null foldable string expressions are allowed to appear after first position.")
   }
 
   test("throw error if null newFieldName supplied") {
     intercept[AnalysisException] {
       structDf.withColumn("a", $"a".withFieldRenamed("a", null))
-    }.getMessage should include("newFieldName cannot be null")
+    }.getMessage should include("Only non-null foldable string expressions are allowed to appear after first position.")
   }
 
   test("rename field in struct") {

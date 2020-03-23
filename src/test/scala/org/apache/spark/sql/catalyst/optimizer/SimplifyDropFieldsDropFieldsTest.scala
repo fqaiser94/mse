@@ -32,8 +32,8 @@ class SimplifyDropFieldsDropFieldsTest extends OptimizerTest {
 
   test("should collapse successive DropFields call into a single DropFields call") {
     assertEquivalentPlanAndEvaluation(
-      DropFields(DropFields(inputStruct, "b"), "c"),
-      DropFields(inputStruct, "b", "c"),
+      DropFields(DropFields(inputStruct :: Literal("b") :: Nil) :: Literal("c") :: Nil),
+      DropFields(inputStruct :: Literal("b") :: Literal("c") :: Nil),
       create_row(1, 4, 5, 6),
       StructType(Seq(
         StructField("a", IntegerType),
@@ -42,8 +42,8 @@ class SimplifyDropFieldsDropFieldsTest extends OptimizerTest {
         StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(DropFields(nullInputStruct, "b"), "c"),
-      DropFields(nullInputStruct, "b", "c"),
+      DropFields(DropFields(nullInputStruct :: Literal("b") :: Nil) :: Literal("c") :: Nil),
+      DropFields(nullInputStruct :: Literal("b") :: Literal("c") :: Nil),
       null,
       StructType(Seq(
         StructField("a", IntegerType),
@@ -52,8 +52,8 @@ class SimplifyDropFieldsDropFieldsTest extends OptimizerTest {
         StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(DropFields(inputStruct, "a", "b"), "c"),
-      DropFields(inputStruct, "a", "b", "c"),
+      DropFields(DropFields(inputStruct :: Literal("a") :: Literal("b") :: Nil) :: Literal("c") :: Nil),
+      DropFields(inputStruct :: Literal("a") :: Literal("b") :: Literal("c") :: Nil),
       create_row(4, 5, 6),
       StructType(Seq(
         StructField("d", IntegerType),
@@ -61,8 +61,8 @@ class SimplifyDropFieldsDropFieldsTest extends OptimizerTest {
         StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(DropFields(inputStruct, "a"), "b", "c"),
-      DropFields(inputStruct, "a", "b", "c"),
+      DropFields(DropFields(inputStruct :: Literal("a") :: Nil) :: Literal("b") :: Literal("c") :: Nil),
+      DropFields(inputStruct :: Literal("a") :: Literal("b") :: Literal("c") :: Nil),
       create_row(4, 5, 6),
       StructType(Seq(
         StructField("d", IntegerType),
@@ -70,8 +70,8 @@ class SimplifyDropFieldsDropFieldsTest extends OptimizerTest {
         StructField("f", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      DropFields(DropFields(inputStruct, "a", "b"), "c", "d"),
-      DropFields(inputStruct, "a", "b", "c", "d"),
+      DropFields(DropFields(inputStruct :: Literal("a") :: Literal("b") :: Nil) :: Literal("c") :: Literal("d") :: Nil),
+      DropFields(inputStruct :: Literal("a") :: Literal("b") :: Literal("c") :: Literal("d") :: Nil),
       create_row(5, 6),
       StructType(Seq(
         StructField("e", IntegerType),

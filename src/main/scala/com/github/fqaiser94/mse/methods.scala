@@ -1,9 +1,9 @@
 package com.github.fqaiser94.mse
 
-import org.apache.spark.sql.{Column, ColumnName}
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
-import org.apache.spark.sql.catalyst.expressions.{AddFields, DropFields, Expression, RenameFields}
+import org.apache.spark.sql.catalyst.expressions.{AddFields, DropFields, Expression, Literal, RenameFields}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{Column, ColumnName}
 
 object methods {
 
@@ -21,7 +21,7 @@ object methods {
       * @since 2.4.4
       */
     def withField(fieldName: String, fieldValue: Column): Column = withExpr {
-      AddFields(expr, fieldName, fieldValue.expr)
+      AddFields(expr :: Literal(fieldName) :: fieldValue.expr :: Nil)
     }
 
     /**
@@ -33,7 +33,7 @@ object methods {
       * @since 2.4.4
       */
     def dropFields(fieldNames: String*): Column = withExpr {
-      DropFields(expr, fieldNames: _*)
+      DropFields(expr +: fieldNames.toList.map(Literal(_)))
     }
 
     /**
@@ -45,7 +45,7 @@ object methods {
       * @since 2.4.4
       */
     def withFieldRenamed(existingFieldName: String, newFieldName: String): Column = withExpr {
-      RenameFields(expr, existingFieldName, newFieldName)
+      RenameFields(expr :: Literal(existingFieldName) :: Literal(newFieldName) :: Nil)
     }
 
     private def withExpr(newExpr: Expression): Column = new Column(newExpr)

@@ -1,6 +1,6 @@
 package com.github.fqaiser94.mse
 
-import methods._
+import com.github.fqaiser94.mse.methods._
 import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
 import org.apache.spark.sql.execution.command.ExplainCommand
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -31,13 +31,13 @@ trait dropFieldsTests extends QueryTester {
   test("throw error if withField is called on a column that is not struct dataType") {
     intercept[AnalysisException] {
       testData.withColumn("key", $"key".dropFields("a"))
-    }.getMessage should include("struct should be struct data type. struct is integer")
+    }.getMessage should include("Only struct is allowed to appear at first position, got: integer")
   }
 
   test("throw error if null fieldName supplied") {
     intercept[AnalysisException] {
       structDf.withColumn("a", $"a".dropFields(null))
-    }.getMessage should include("fieldNames cannot contain null")
+    }.getMessage should include("Only non-null foldable string expressions are allowed after first position.")
   }
 
   test("drop field in struct") {

@@ -345,6 +345,12 @@ arrayOfStructs.withColumn("array", transform($"array", elem => elem.dropFields("
 // +----------------+
 ```
 
+# SQL installation and usage
+
+The underlying Catalyst Expressions are SQL compatible. 
+Unfortunately, Spark only added public APIs for plugging in custom Catalyst Expressions into the FunctionRegistry in Spark 3.0.0 
+(which is at the time of writing is still in preview). You can find a project with an example of how to do this [here](https://github.com/fqaiser94/mse-sql-example). 
+
 # Catalyst Optimization Rules
 
 We also provide some Catalyst optimization rules that can be plugged into a Spark session to get even better performance. This is as simple as including the following two lines of code at the start of your Scala Spark program:  
@@ -386,7 +392,7 @@ As you can see, the successive `add_fields` method calls have been collapsed int
 
 Theoretically, this should improve performance but for the most part, you won't notice much difference unless you're doing some particularly intense struct manipulation and/or working with a particularly large dataset.  
 
-Unfortunately, to the best of our knowledge, there is currently no way to plug in custom Catalyst optimization rules using the Python APIs. 
+Unfortunately, to the best of our knowledge, there is currently no way to plug in custom Catalyst optimization rules directly using the Python APIs. 
 
 # Questions/Thoughts/Concerns?
 

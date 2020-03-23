@@ -32,8 +32,8 @@ class SimplifyRenameFieldsRenameFieldsTest extends OptimizerTest {
     val expectedEvaluationResult = create_row(1, 2, 3)
 
     assertEquivalentPlanAndEvaluation(
-      RenameFields(RenameFields(inputStruct, "a", "x"), "b", "y"),
-      RenameFields(inputStruct, Seq("a", "b"), Seq("x", "y")),
+      RenameFields(RenameFields(inputStruct :: Literal("a") :: Literal("x") :: Nil) :: Literal("b") :: Literal("y") :: Nil),
+      RenameFields(inputStruct :: Literal("a") :: Literal("x") :: Literal("b") :: Literal("y") :: Nil),
       expectedEvaluationResult,
       StructType(Seq(
         StructField("x", IntegerType),
@@ -41,8 +41,8 @@ class SimplifyRenameFieldsRenameFieldsTest extends OptimizerTest {
         StructField("c", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      RenameFields(RenameFields(nullInputStruct, "a", "x"), "b", "y"),
-      RenameFields(nullInputStruct, Seq("a", "b"), Seq("x", "y")),
+      RenameFields(RenameFields(nullInputStruct :: Literal("a") :: Literal("x") :: Nil) :: Literal("b") :: Literal("y") :: Nil),
+      RenameFields(nullInputStruct :: Literal("a") :: Literal("x") :: Literal("b") :: Literal("y") :: Nil),
       null,
       StructType(Seq(
         StructField("x", IntegerType),
@@ -50,8 +50,8 @@ class SimplifyRenameFieldsRenameFieldsTest extends OptimizerTest {
         StructField("c", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      RenameFields(RenameFields(inputStruct, Seq("a", "b"), Seq("x", "y")), "c", "z"),
-      RenameFields(inputStruct, Seq("a", "b", "c"), Seq("x", "y", "z")),
+      RenameFields(RenameFields(inputStruct :: Literal("a") :: Literal("x") :: Literal("b") :: Literal("y") :: Nil) :: Literal("c") :: Literal("z") :: Nil),
+      RenameFields(inputStruct :: Literal("a") :: Literal("x") :: Literal("b") :: Literal("y") :: Literal("c") :: Literal("z") :: Nil),
       expectedEvaluationResult,
       StructType(Seq(
         StructField("x", IntegerType),
@@ -59,8 +59,8 @@ class SimplifyRenameFieldsRenameFieldsTest extends OptimizerTest {
         StructField("z", IntegerType))))
 
     assertEquivalentPlanAndEvaluation(
-      RenameFields(RenameFields(inputStruct, "a", "x"), Seq("b", "c"), Seq("y", "z")),
-      RenameFields(inputStruct, Seq("a", "b", "c"), Seq("x", "y", "z")),
+      RenameFields(RenameFields(inputStruct :: Literal("a") :: Literal("x") :: Nil) :: Literal("b") :: Literal("y") :: Literal("c") :: Literal("z") :: Nil),
+      RenameFields(inputStruct :: Literal("a") :: Literal("x") :: Literal("b") :: Literal("y") :: Literal("c") :: Literal("z") :: Nil),
       expectedEvaluationResult,
       StructType(Seq(
         StructField("x", IntegerType),

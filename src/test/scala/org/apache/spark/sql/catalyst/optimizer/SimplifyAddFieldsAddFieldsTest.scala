@@ -33,8 +33,8 @@ class SimplifyAddFieldsAddFieldsTest extends OptimizerTest {
     val exprA = Literal.create(4, IntegerType)
 
     assertEquivalentPlanAndEvaluation(
-      AddFields(inputStruct, nameA, exprA),
-      AddFields(inputStruct, nameA, exprA),
+      AddFields(inputStruct :: Literal(nameA) :: exprA :: Nil),
+      AddFields(inputStruct :: Literal(nameA) :: exprA :: Nil),
       create_row(1, 2, 3, exprA.value),
       StructType(Seq(
         StructField("a", IntegerType),
@@ -57,8 +57,8 @@ class SimplifyAddFieldsAddFieldsTest extends OptimizerTest {
     val exprD = Literal.create(6, IntegerType)
 
     assertEquivalentPlanAndEvaluation(
-      AddFields(AddFields(inputStruct, nameA, exprA), nameB, exprB),
-      AddFields(inputStruct, Seq(nameA, nameB), Seq(exprA, exprB)),
+      AddFields(AddFields(inputStruct :: Literal(nameA) :: exprA :: Nil) :: Literal(nameB) :: exprB :: Nil),
+      AddFields(inputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Nil),
       create_row(1, 2, exprA.value, exprB.value),
       StructType(Seq(
         StructField("a", IntegerType),
@@ -67,8 +67,8 @@ class SimplifyAddFieldsAddFieldsTest extends OptimizerTest {
         StructField(nameB, exprB.dataType, exprB.nullable))))
 
     assertEquivalentPlanAndEvaluation(
-      AddFields(AddFields(nullInputStruct, nameA, exprA), nameB, exprB),
-      AddFields(nullInputStruct, Seq(nameA, nameB), Seq(exprA, exprB)),
+      AddFields(AddFields(nullInputStruct :: Literal(nameA) :: exprA :: Nil) :: Literal(nameB) :: exprB :: Nil),
+      AddFields(nullInputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Nil),
       null,
       StructType(Seq(
         StructField("a", IntegerType),
@@ -77,8 +77,8 @@ class SimplifyAddFieldsAddFieldsTest extends OptimizerTest {
         StructField(nameB, exprB.dataType, exprB.nullable))))
 
     assertEquivalentPlanAndEvaluation(
-      AddFields(AddFields(inputStruct, Seq(nameA, nameB), Seq(exprA, exprB)), nameC, exprC),
-      AddFields(inputStruct, Seq(nameA, nameB, nameC), Seq(exprA, exprB, exprC)),
+      AddFields(AddFields(inputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Nil) :: Literal(nameC) :: exprC :: Nil),
+      AddFields(inputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Literal(nameC) :: exprC :: Nil),
       create_row(1, 2, exprA.value, exprB.value, exprC.value),
       StructType(Seq(
         StructField("a", IntegerType),
@@ -88,8 +88,8 @@ class SimplifyAddFieldsAddFieldsTest extends OptimizerTest {
         StructField(nameC, exprC.dataType, exprC.nullable))))
 
     assertEquivalentPlanAndEvaluation(
-      AddFields(AddFields(inputStruct, nameA, exprA), Seq(nameB, nameC), Seq(exprB, exprC)),
-      AddFields(inputStruct, Seq(nameA, nameB, nameC), Seq(exprA, exprB, exprC)),
+      AddFields(AddFields(inputStruct :: Literal(nameA) :: exprA :: Nil) :: Literal(nameB) :: exprB :: Literal(nameC) :: exprC :: Nil),
+      AddFields(inputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Literal(nameC) :: exprC :: Nil),
       create_row(1, 2, exprA.value, exprB.value, exprC.value),
       StructType(Seq(
         StructField("a", IntegerType),
@@ -99,8 +99,8 @@ class SimplifyAddFieldsAddFieldsTest extends OptimizerTest {
         StructField(nameC, exprC.dataType, exprC.nullable))))
 
     assertEquivalentPlanAndEvaluation(
-      AddFields(AddFields(inputStruct, Seq(nameA, nameB), Seq(exprA, exprB)), Seq(nameC, nameD), Seq(exprC, exprD)),
-      AddFields(inputStruct, Seq(nameA, nameB, nameC, nameD), Seq(exprA, exprB, exprC, exprD)),
+      AddFields(AddFields(inputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Nil) :: Literal(nameC) :: exprC :: Literal(nameD) :: exprD :: Nil),
+      AddFields(inputStruct :: Literal(nameA) :: exprA :: Literal(nameB) :: exprB :: Literal(nameC) :: exprC :: Literal(nameD) :: exprD :: Nil),
       create_row(1, 2, exprA.value, exprB.value, exprC.value, exprD.value),
       StructType(Seq(
         StructField("a", IntegerType),

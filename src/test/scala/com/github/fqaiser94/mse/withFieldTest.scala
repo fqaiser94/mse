@@ -69,13 +69,13 @@ trait withFieldTests extends QueryTester {
   test("throw error if withField is called on a column that is not struct dataType") {
     intercept[AnalysisException] {
       testData.withColumn("key", $"key".withField("a", lit(2)))
-    }.getMessage should include("struct should be struct data type. struct is integer")
+    }.getMessage should include("Only struct is allowed to appear at first position, got: integer")
   }
 
   test("throw error if null fieldName supplied") {
     intercept[AnalysisException] {
       structLevel1.withColumn("a", $"a".withField(null, lit(2)))
-    }.getMessage should include("fieldNames cannot contain null")
+    }.getMessage should include("Only non-null foldable string expressions are allowed to appear at even position")
   }
 
   test("add new field to struct") {
@@ -190,6 +190,23 @@ trait withFieldTests extends QueryTester {
             "d", lit(0))))),
       Row(null) :: Nil,
       StructType(Seq(StructField("a", structLevel3WithNewFieldSchema))))
+  }
+
+  test("add new field with null value to struct") {
+    val expectedValue = Row(Row(1, 1, 1, null)) :: Nil
+    val expectedSchema = StructType(Seq(StructField("a", structLevel1Schema.add("d", IntegerType, nullable = true))))
+
+    checkAnswer(
+      structLevel1.withColumn("a", 'a.withField("d", lit(null).cast(IntegerType))),
+      expectedValue,
+      expectedSchema)
+  }
+
+  test("replace field with null value in struct") {
+    checkAnswer(
+      structLevel1.withColumn("a", $"a".withField("b", lit(null).cast(IntegerType))),
+      Row(Row(1, null, 1)) :: Nil,
+      StructType(Seq(StructField("a", StructType(structLevel1Schema.updated(1, StructField("b", IntegerType, nullable = true)))))))
   }
 }
 
