@@ -31,7 +31,7 @@ As such, you can pull in the current stable release by simply adding a library d
 For example, for an SBT project, simply add the following line to your `build.sbt`:
 
 ```
-libraryDependencies += "com.github.fqaiser94" %% "mse" % "0.2.2"
+libraryDependencies += "com.github.fqaiser94" %% "mse" % "0.2.4"
 ```
 
 For other types of projects (e.g. Maven, Gradle), see the installation instructions at this [link](https://search.maven.org/artifact/com.github.fqaiser94/mse_2.11). 
@@ -43,7 +43,7 @@ You will also need to provide your PySpark application/s with the path to the MS
 
 ```bash
 pip install mse
-curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.2/mse_2.11-0.2.2.jar --output mse.jar
+curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.4/mse_2.11-0.2.4.jar --output mse.jar
 pyspark --jars mse.jar
 ```
 
