@@ -26,46 +26,50 @@ class DropFieldsTest extends ExpressionTester {
   }
 
   test("prettyName should return \"drop_field\"") {
-    assert(DropFields(nullStruct, "a").prettyName == "drop_fields")
+    assert(DropFields(nullStruct :: Literal("a") :: Nil).prettyName == "drop_fields")
   }
 
   test("checkInputDataTypes should fail if struct is not a struct dataType") {
     nonNullInputs.foreach {
       case input if input.dataType.typeName == "struct" =>
-        val result = DropFields(input, "a").checkInputDataTypes()
+        val result = DropFields(input :: Literal("a") :: Nil).checkInputDataTypes()
         val expected = TypeCheckResult.TypeCheckSuccess
         assert(result == expected)
       case input =>
-        val result = DropFields(input, "a").checkInputDataTypes()
+        val result = DropFields(input :: Literal("a") :: Nil).checkInputDataTypes()
         val expected = TypeCheckResult.TypeCheckFailure(
-          s"struct should be struct data type. struct is ${input.expr.dataType.typeName}")
+          s"Only struct is allowed to appear at first position, got: ${input.expr.dataType.typeName}.")
         assert(result == expected)
     }
   }
 
   test("checkInputDataTypes should succeed even if fieldName doesn't exist") {
-    assert(DropFields(nonNullStruct, "d").checkInputDataTypes() ==
+    assert(DropFields(nonNullStruct :: Literal("d") :: Nil).checkInputDataTypes() ==
       TypeCheckResult.TypeCheckSuccess)
   }
 
   test("checkInputDataTypes should succeed even if any of the given fieldNames don't exist") {
-    assert(DropFields(nonNullStruct, "a", "d").checkInputDataTypes() ==
+    assert(DropFields(nonNullStruct :: Literal("a") :: Literal("d") :: Nil).checkInputDataTypes() ==
       TypeCheckResult.TypeCheckSuccess)
   }
 
   test("checkInputDataTypes should fail if any of the fieldNames passed in is null") {
-    assert(DropFields(nonNullStruct, null).checkInputDataTypes() ==
+    assert(DropFields(nonNullStruct :: null :: Nil).checkInputDataTypes() ==
       TypeCheckResult.TypeCheckFailure(
-        "fieldNames cannot contain null"))
+        "Only non-null foldable string expressions are allowed after first position."))
 
-    assert(DropFields(nonNullStruct, "a", null).checkInputDataTypes() ==
+    assert(DropFields(nonNullStruct :: Literal("a") :: null :: Nil).checkInputDataTypes() ==
       TypeCheckResult.TypeCheckFailure(
-        "fieldNames cannot contain null"))
+        "Only non-null foldable string expressions are allowed after first position."))
+
+    assert(DropFields(nonNullStruct :: Literal(null) :: Nil).checkInputDataTypes() ==
+      TypeCheckResult.TypeCheckFailure(
+        "Only non-null foldable string expressions are allowed after first position."))
   }
 
   test("should return null if struct = null") {
     checkEvaluationCustom(
-      DropFields(nullStruct, "a"),
+      DropFields(nullStruct :: Literal("a") :: Nil),
       null,
       StructType(Seq(
         StructField("b", StringType),
@@ -79,7 +83,7 @@ class DropFieldsTest extends ExpressionTester {
   ).foreach { case (structName, struct) =>
     test(s"should drop field with given fieldName in $structName") {
       checkEvaluationCustom(
-        DropFields(struct, "a"),
+        DropFields(struct :: Literal("a") :: Nil),
         create_row("hello", true, "world"),
         StructType(Seq(
           StructField("b", StringType),
@@ -87,7 +91,7 @@ class DropFieldsTest extends ExpressionTester {
           StructField("c", StringType))))
 
       checkEvaluationCustom(
-        DropFields(struct, "b"),
+        DropFields(struct :: Literal("b") :: Nil),
         create_row(1, true, "world"),
         StructType(Seq(
           StructField("a", IntegerType),
@@ -95,9 +99,16 @@ class DropFieldsTest extends ExpressionTester {
           StructField("c", StringType))))
     }
 
+    test(s"should not drop any fields in $structName") {
+      checkEvaluationCustom(
+        DropFields(struct :: Nil),
+        struct.value,
+        struct.dataType)
+    }
+
     test(s"should drop all fields with given fieldName in $structName") {
       checkEvaluationCustom(
-        DropFields(struct, "c"),
+        DropFields(struct :: Literal("c") :: Nil),
         create_row(1, "hello"),
         StructType(Seq(
           StructField("a", IntegerType),
@@ -106,7 +117,7 @@ class DropFieldsTest extends ExpressionTester {
 
     test(s"should drop all fields with given fieldNames in $structName") {
       checkEvaluationCustom(
-        DropFields(struct, "a", "b"),
+        DropFields(struct :: Literal("a") :: Literal("b") :: Nil),
         create_row(true, "world"),
         StructType(Seq(
           StructField("c", BooleanType),
@@ -115,14 +126,14 @@ class DropFieldsTest extends ExpressionTester {
 
     test(s"should return empty struct if all fields in $structName are dropped") {
       checkEvaluationCustom(
-        DropFields(struct, "a", "b", "c"),
+        DropFields(struct :: Literal("a") :: Literal("b") :: Literal("c") :: Nil),
         create_row(),
         StructType(Seq.empty))
     }
 
     test(s"should return original struct if given fieldName does not exist in $structName") {
       checkEvaluationCustom(
-        DropFields(struct, "d"),
+        DropFields(struct :: Literal("d") :: Nil),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
           StructField("a", IntegerType),
@@ -133,7 +144,7 @@ class DropFieldsTest extends ExpressionTester {
 
     test(s"should return original struct if given fieldNames do not exist in $structName") {
       checkEvaluationCustom(
-        DropFields(struct, "d", "e"),
+        DropFields(struct :: Literal("d") :: Literal("e") :: Nil),
         create_row(1, "hello", true, "world"),
         StructType(Seq(
           StructField("a", IntegerType),
@@ -144,7 +155,7 @@ class DropFieldsTest extends ExpressionTester {
 
     test(s"should work in a nested fashion on $structName") {
       checkEvaluationCustom(
-        DropFields(DropFields(struct, "a"), "b"),
+        DropFields(DropFields(struct :: Literal("a") :: Nil) :: Literal("b") :: Nil),
         create_row(true, "world"),
         StructType(Seq(
           StructField("c", BooleanType),

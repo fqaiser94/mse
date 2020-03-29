@@ -21,7 +21,7 @@ For example:
 
 ```bash
 pip install mse
-curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.2/mse_2.11-0.2.2.jar --output mse.jar
+curl https://repo1.maven.org/maven2/com/github/fqaiser94/mse_2.11/0.2.4/mse_2.11-0.2.4.jar --output mse.jar
 pyspark --jars mse.jar
 ```
 

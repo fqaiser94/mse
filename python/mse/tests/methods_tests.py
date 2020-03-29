@@ -69,13 +69,13 @@ class MethodsTests(ReusedSQLTestCase):
         with self.subTest("throw error if withField is called on a column that is not struct dataType"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "struct should be struct data type. struct is integer",
+                "Only struct is allowed to appear at first position, got: integer",
                 lambda: non_struct_df.withColumn("a", col("a").withField("a", lit(2))).collect())
 
         with self.subTest("throw error if null fieldName supplied"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "fieldNames cannot contain null",
+                "Only non-null foldable string expressions are allowed to appear at even position",
                 lambda: struct_level1_df.withColumn("a", col("a").withField(None, lit(2))).collect())
 
         with self.subTest("add new field to struct"):
@@ -194,19 +194,19 @@ class MethodsTests(ReusedSQLTestCase):
         with self.subTest("throw error if withFieldRenamed is called on a column that is not struct dataType"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "struct should be struct data type. struct is integer",
+                "Only struct is allowed to appear at first position, got: integer",
                 lambda: non_struct_df.withColumn("a", col("a").withFieldRenamed("a", "z")))
 
         with self.subTest("throw error if null existingFieldName supplied"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "existingFieldName cannot be null",
+                "Only non-null foldable string expressions are allowed to appear after first position.",
                 lambda: struct_df.withColumn("a", col("a").withFieldRenamed(None, "z")))
 
         with self.subTest("throw error if null newFieldName supplied"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "newFieldName cannot be null",
+                "Only non-null foldable string expressions are allowed to appear after first position.",
                 lambda: struct_df.withColumn("a", col("a").withFieldRenamed("a", None)))
 
         with self.subTest("rename field in struct"):
@@ -286,13 +286,13 @@ class MethodsTests(ReusedSQLTestCase):
         with self.subTest("throw error if withField is called on a column that is not struct dataType"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "struct should be struct data type. struct is integer",
+                "Only struct is allowed to appear at first position, got: integer",
                 lambda: non_struct_df.withColumn("a", col("a").dropFields("a")))
 
         with self.subTest("throw error if null fieldName supplied"):
             self.assertRaisesRegex(
                 AnalysisException,
-                "fieldNames cannot contain null",
+                "Only non-null foldable string expressions are allowed after first position.",
                 lambda: struct_df.withColumn("a", col("a").dropFields(None)))
 
         with self.subTest("drop field in struct"):

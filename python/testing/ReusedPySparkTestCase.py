@@ -28,7 +28,7 @@ class ReusedPySparkTestCase(unittest.TestCase):
         Override this in subclasses to supply a more specific conf
         """
 
-        return SparkConf().set("spark.driver.extraClassPath", "./mse.jar")
+        return SparkConf().set("spark.jars", "./mse.jar")
 
     @classmethod
     def setUpClass(cls):

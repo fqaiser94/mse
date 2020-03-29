@@ -4,55 +4,67 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.expressions.codegen.Block._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenerator, CodegenContext, ExprCode, FalseLiteral}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.unsafe.types.UTF8String
 
 /**
-  *
-  * Adds/replaces fields in a struct.
-  * Returns null if struct is null.
-  * If there are multiple existing fields with the one of the fieldNames, they will all be replaced.
-  *
-  * @param struct           : The struct to add fields to.
-  * @param fieldNames       : The names of the fieldExpressions to add to given struct.
-  * @param fieldExpressions : The expressions to assign to each fieldName in fieldNames.
-  */
+ * Adds/replaces fields in a struct.
+ * Returns null if struct is null.
+ * If multiple fields already exist with the one of the given fieldNames, they will all be replaced.
+ */
 // scalastyle:off line.size.limit
 @ExpressionDescription(
-  usage = "_FUNC_(struct, fieldName, field) - Adds/replaces field in given struct.",
-  examples =
-    """
+  usage = "_FUNC_(struct, name1, val1, name2, val2, ...) - Adds/replaces fields in struct by name.",
+  examples = """
     Examples:
-      > SELECT _FUNC_({"a":1}, "b", 2);
-       {"a":1,"b":2}
+      > SELECT _FUNC_({"a":1}, "b", 2, "c", 3);
+       {"a":1,"b":2,"c":3}
   """)
 // scalastyle:on line.size.limit
-case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]) extends Expression {
+case class AddFields(children: Seq[Expression]) extends Expression {
 
-  override def children: Seq[Expression] = struct +: fieldExpressions
+  private lazy val struct: Expression = children.head
+  private lazy val (nameExprs, valExprs) = children.drop(1).grouped(2).map {
+    case Seq(name, value) => (name, value)
+  }.toList.unzip
+  private lazy val fieldNames = nameExprs.map(_.eval().asInstanceOf[UTF8String].toString)
+  private lazy val pairs = fieldNames.zip(valExprs)
+
+  override def nullable: Boolean = struct.nullable
+
+  private lazy val ogStructType: StructType =
+    struct.dataType.asInstanceOf[StructType]
 
   override lazy val dataType: StructType = {
     val existingFields = ogStructType.fields.map { x => (x.name, x) }
-    val addOrReplaceFields = pairs.map { case (fieldName, field) => (fieldName, StructField(fieldName, field.dataType, field.nullable)) }
+    val addOrReplaceFields = pairs.map { case (fieldName, field) =>
+      (fieldName, StructField(fieldName, field.dataType, field.nullable))
+    }
     val newFields = loop(existingFields, addOrReplaceFields).map(_._2)
     StructType(newFields)
   }
 
-  override def nullable: Boolean = struct.nullable
-
   override def checkInputDataTypes(): TypeCheckResult = {
+    if (children.size % 2 == 0) {
+      return TypeCheckResult.TypeCheckFailure(s"$prettyName expects an odd number of arguments.")
+    }
+
     val typeName = struct.dataType.typeName
-    if (typeName != StructType(Nil).typeName)
+    val expectedStructType = StructType(Nil).typeName
+    if (typeName != expectedStructType) {
       return TypeCheckResult.TypeCheckFailure(
-        s"struct should be struct data type. struct is $typeName")
+        s"Only $expectedStructType is allowed to appear at first position, got: $typeName.")
+    }
 
-    if (fieldNames.contains(null))
-      return TypeCheckResult.TypeCheckFailure("fieldNames cannot contain null")
+    if (nameExprs.contains(null) || nameExprs.exists(e => !(e.foldable && e.dataType == StringType))) {
+      return TypeCheckResult.TypeCheckFailure(
+        s"Only non-null foldable ${StringType.catalogString} expressions are allowed to appear at even position.")
+    }
 
-    if (fieldExpressions.contains(null))
-      return TypeCheckResult.TypeCheckFailure("fieldExpressions cannot contain null")
-
-    if (fieldNames.size != fieldExpressions.size)
-      return TypeCheckResult.TypeCheckFailure("fieldNames and fieldExpressions cannot have different lengths")
+    if (valExprs.contains(null)) {
+      return TypeCheckResult.TypeCheckFailure(
+        s"Only non-null expressions are allowed to appear at odd positions after first position.")
+    }
 
     TypeCheckResult.TypeCheckSuccess
   }
@@ -62,8 +74,10 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
     if (structValue == null) {
       null
     } else {
-      val existingValues: Seq[(FieldName, Any)] = ogStructType.fieldNames.zip(structValue.asInstanceOf[InternalRow].toSeq(ogStructType))
-      val addOrReplaceValues: Seq[(FieldName, Any)] = pairs.map { case (fieldName, expression) => (fieldName, expression.eval(input)) }
+      val existingValues: Seq[(FieldName, Any)] =
+        ogStructType.fieldNames.zip(structValue.asInstanceOf[InternalRow].toSeq(ogStructType))
+      val addOrReplaceValues: Seq[(FieldName, Any)] =
+        pairs.map { case (fieldName, expression) => (fieldName, expression.eval(input)) }
       val newValues = loop(existingValues, addOrReplaceValues).map(_._2)
       InternalRow.fromSeq(newValues)
     }
@@ -71,23 +85,25 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val structGen = struct.genCode(ctx)
-    val addOrReplaceFieldsGens = fieldExpressions.map(_.genCode(ctx))
+    val addOrReplaceFieldsGens = valExprs.map(_.genCode(ctx))
     val resultCode: String = {
       val structVar = structGen.value
       type NullCheck = String
       type NonNullValue = String
-      val existingFieldsCode: Seq[(FieldName, (NullCheck, NonNullValue))] = ogStructType.fields.zipWithIndex.map {
-        case (structField, i) =>
-          val nullCheck = s"$structVar.isNullAt($i)"
-          val nonNullValue = CodeGenerator.getValue(structVar, structField.dataType, i.toString)
-          (structField.name, (nullCheck, nonNullValue))
-      }
-      val addOrReplaceFieldsCode: Seq[(FieldName, (NullCheck, NonNullValue))] = fieldNames.zip(addOrReplaceFieldsGens).map {
-        case (fieldName, fieldExprCode) =>
-          val nullCheck = fieldExprCode.isNull.code
-          val nonNullValue = fieldExprCode.value.code
-          (fieldName, (nullCheck, nonNullValue))
-      }
+      val existingFieldsCode: Seq[(FieldName, (NullCheck, NonNullValue))] =
+        ogStructType.fields.zipWithIndex.map {
+          case (structField, i) =>
+            val nullCheck = s"$structVar.isNullAt($i)"
+            val nonNullValue = CodeGenerator.getValue(structVar, structField.dataType, i.toString)
+            (structField.name, (nullCheck, nonNullValue))
+        }
+      val addOrReplaceFieldsCode: Seq[(FieldName, (NullCheck, NonNullValue))] =
+        fieldNames.zip(addOrReplaceFieldsGens).map {
+          case (fieldName, fieldExprCode) =>
+            val nullCheck = fieldExprCode.isNull.code
+            val nonNullValue = fieldExprCode.value.code
+            (fieldName, (nullCheck, nonNullValue))
+        }
       val newFieldsCode = loop(existingFieldsCode, addOrReplaceFieldsCode)
       val rowClass = classOf[GenericInternalRow].getName
       val rowValuesVar = ctx.freshName("rowValues")
@@ -138,17 +154,14 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 
   override def prettyName: String = "add_fields"
 
-  private lazy val ogStructType: StructType =
-    struct.dataType.asInstanceOf[StructType]
-
-  private val pairs = fieldNames.zip(fieldExpressions)
-
   private type FieldName = String
 
   /**
-    * Recursively loops through addOrReplaceFields, adding or replacing fields by FieldName.
-    */
-  private def loop[V](existingFields: Seq[(String, V)], addOrReplaceFields: Seq[(String, V)]): Seq[(String, V)] = {
+   * Recursively loop through addOrReplaceFields, adding or replacing fields by FieldName.
+   */
+  @scala.annotation.tailrec
+  private def loop[V](existingFields: Seq[(String, V)],
+                      addOrReplaceFields: Seq[(String, V)]): Seq[(String, V)] = {
     if (addOrReplaceFields.nonEmpty) {
       val existingFieldNames = existingFields.map(_._1)
       val newField@(newFieldName, _) = addOrReplaceFields.head
@@ -172,6 +185,13 @@ case class AddFields(struct: Expression, fieldNames: Seq[String], fieldExpressio
 }
 
 object AddFields {
+  @deprecated("use AddFields(children: Seq[Expression]) constructor.", "0.2.4")
   def apply(struct: Expression, fieldName: String, fieldExpression: Expression): AddFields =
-    AddFields(struct, Seq(fieldName), Seq(fieldExpression))
+    AddFields(struct :: Literal(fieldName) :: fieldExpression :: Nil)
+
+  @deprecated("use AddFields(children: Seq[Expression]) constructor.", "0.2.4")
+  def apply(struct: Expression, fieldNames: Seq[String], fieldExpressions: Seq[Expression]): AddFields = {
+    val exprs = fieldNames.zip(fieldExpressions).flatMap { case (name, expr) => Seq(Literal(name), expr) }
+    AddFields(struct +: exprs)
+  }
 }
