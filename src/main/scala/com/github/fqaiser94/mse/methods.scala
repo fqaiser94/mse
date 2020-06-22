@@ -1,6 +1,9 @@
 package com.github.fqaiser94.mse
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
+import org.apache.spark.sql.catalyst.expressions.LambdaFunction
+import org.apache.spark.sql.catalyst.expressions.RenameFieldsByFunction
+import org.apache.spark.sql.catalyst.expressions.UnresolvedNamedLambdaVariable
 import org.apache.spark.sql.catalyst.expressions.{AddFields, DropFields, Expression, Literal, RenameFields}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{Column, ColumnName}
@@ -46,6 +49,22 @@ object methods {
       */
     def withFieldRenamed(existingFieldName: String, newFieldName: String): Column = withExpr {
       RenameFields(expr :: Literal(existingFieldName) :: Literal(newFieldName) :: Nil)
+    }
+
+    def withFieldRenamedByFn(renameFn: Column => Column): Column = withExpr {
+      RenameFieldsByFunction(expr, createLambdaForRenameFn(renameFn))
+    }
+
+    /**
+      * Adapted from [[org.apache.spark.sql.functions.createLambda]]
+      *
+      * @param f the function
+      * @return a lambda encapsulating the given function
+      */
+    private def createLambdaForRenameFn(f: Column => Column) = {
+      val x = UnresolvedNamedLambdaVariable(Seq("x"))
+      val function = f(withExpr(x)).expr
+      LambdaFunction(function, Seq(x))
     }
 
     private def withExpr(newExpr: Expression): Column = new Column(newExpr)

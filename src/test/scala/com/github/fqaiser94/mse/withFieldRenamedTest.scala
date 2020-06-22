@@ -1,6 +1,7 @@
 package com.github.fqaiser94.mse
 
 import methods._
+import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.optimizer.SimplifyStructExpressions
 import org.apache.spark.sql.execution.command.ExplainCommand
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -99,6 +100,26 @@ trait withFieldRenamedTests extends QueryTester {
           StructField("c", IntegerType),
           StructField("c", IntegerType)))))))
 
+  }
+
+  test("rename by function correctly") {
+    import org.apache.spark.sql.functions.concat
+    import org.apache.spark.sql.functions.lit
+    import org.apache.spark.sql.functions.when
+    val renameFn: Column => Column = { col =>
+      // if the field is not named "a", then suffix with "baz", otherwise suffix with "bar"
+      concat(col, when(col =!= "a", lit("bar")).otherwise(lit("baz")))
+    }
+
+    checkAnswer(
+      structDf.withColumn("a", $"a".withFieldRenamedByFn(renameFn)),
+      Row(Row(1, 2, 3, 4)) :: Nil,
+      StructType(Seq(
+        StructField("a", StructType(Seq(
+          StructField("abaz", IntegerType),
+          StructField("bbar", IntegerType),
+          StructField("cbar", IntegerType),
+          StructField("cbar", IntegerType)))))))
   }
 }
 
